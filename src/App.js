@@ -17,12 +17,10 @@ export default class App extends Component {
     });
   }
   callApi(){
-    // fetch('/help').then(res => res.json()).then(data => {
-    //   this.setState({currentTime: data.time})
-    // });
     axios.post('/help',{name: "Sukhman"})
     .then(res => {
       let data = res.data;
+      console.log(data.time);
       this.setState({currentTime: data.time})
     }, (error) => {
       console.log(error);
