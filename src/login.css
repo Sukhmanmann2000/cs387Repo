@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap');
+.home {
+    font-family: 'Roboto', sans-serif;
+}
+.homeHeader {
+    margin-top: 2%;
+    font-size: 40px;
+    font-weight: 900;
+    text-align: center;
+}
+.homeLogin {
+    width: 22%;
+    box-shadow: 5px 5px 10px #888888;
+    border-radius: 14px;
+    padding: 20px 30px;
+    padding-right: 40px;
+}
+.homeLoginText {
+    width: 100%;
+    margin-top: 4%;
+    font-weight: 600;
+    font-size: 17px;
+}
+.loginInput {
+    width: 97%;
+    color: #666;
+    margin-top: 5px;
+    height: 25px;
+    padding: 5px;
+    border-radius: 5px;
+    font-size: 16px;
+    border-width: 1px;
+    font-weight: 400;
+    border: 1px solid #CCC;
+    box-shadow: none;
+    outline: none;
+}
+.homeLoginSubmit {
+    width: 40%;
+    padding: 10px;
+    font-size: 20px;
+    font-weight: normal;
+    color: white;
+    border-radius: 20px;
+    border-width: 0px;
+    outline: none;
+    background-color: #66CCFF;
+    background-image: linear-gradient(#66CCFF,#3399CC);
+    cursor: pointer;
+}
+.loginError{
+    width: 97%;
+    margin: 10px 0px 10px 0px;
+    background-color: red;
+    color: white;
+    font-size: 17px;
+    font-weight: 600;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+}
