@@ -39,6 +39,7 @@
   "proxy": "http://localhost:5000",
   "devDependencies": {
     "axios": "^0.21.1",
-    "react-router-dom": "^5.2.0"
+    "react-router-dom": "^5.2.0",
+    "react-select": "^4.2.1"
   }
 }
