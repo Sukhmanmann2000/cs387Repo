@@ -1,10 +1,10 @@
 import React from 'react';
-import './home.css'
+import './css/home.css'
 import { Component } from 'react';
 import axios from 'axios';
 import MovieCard from './MovieCard'
 import FriendMovieCard from './FriendMovieCard';
-import search from './search.png'
+import search from './static/search.png'
 import Collapsible from 'react-collapsible';
 import { Dialog, FormControl, RadioGroup, FormControlLabel, Radio } from '@material-ui/core';
 import CancelRoundedIcon from '@material-ui/icons/CancelRounded';
@@ -21,7 +21,7 @@ export default class Home extends Component{
             addFriendsDialogOpen: false,
             genreList: [],
             likedGenres: {},
-            dialogError: "",
+            selectGenreDialogError: "",
             searchOption: "Title",
             requestQueue: [],
             userList: [],
@@ -68,7 +68,7 @@ export default class Home extends Component{
         })
     }
     toggleProfileDialog(){
-        this.setState({profileDialogOpen: !this.state.profileDialogOpen});
+        this.setState({profileDialogOpen: !this.state.profileDialogOpen, selectGenreDialogError: ""});
     }
     toggleAddFriendsDialog(){
         this.setState({addFriendsDialogOpen: !this.state.addFriendsDialogOpen});
@@ -92,7 +92,7 @@ export default class Home extends Component{
     handleGenreSelect(e){
         var tempDic = this.state.likedGenres;
         tempDic[e.genre_id] = !tempDic[e.genre_id];
-        this.setState({likedGenres: tempDic, dialogError: ""});
+        this.setState({likedGenres: tempDic, selectGenreDialogError: ""});
     }
     saveGenres(){
         let selected = false;
@@ -103,11 +103,11 @@ export default class Home extends Component{
             }
         }
         if (selected){
-            this.setState({dialogError: ""});
+            this.setState({selectGenreDialogError: ""});
             this.toggleProfileDialog();
         }
         else
-            this.setState({dialogError: "Please select atleast 1 Genre"});
+            this.setState({selectGenreDialogError: "Please select atleast 1 Genre"});
     }
     handleSearchOptionChange(e){
         this.setState({searchOption: e.target.value});
@@ -161,8 +161,8 @@ export default class Home extends Component{
                                 )})}
                             </div>
                         </div>
-                        {this.state.dialogError ? <div className="friendsDialogError">
-                            {this.state.dialogError}
+                        {this.state.selectGenreDialogError ? <div className="friendsDialogError">
+                            {this.state.selectGenreDialogError}
                         </div> : null}
                         <div style={{width: "100%",display: "flex",justifyContent: "center", margin: "2% 0%", marginBottom: "5%"}}>
                             <div className="editYourProfile" onClick={this.saveGenres}>Save Genres</div>
