@@ -1,8 +1,8 @@
 import React from 'react';
-import './moviePage.css'
+import './css/moviePage.css'
 import { Component } from 'react';
 import axios from 'axios';
-import star from './star.png'
+import star from './static/star.png'
 import Rating from '@material-ui/lab/Rating';
 import Dialog from '@material-ui/core/Dialog';
 export default class MoviePage extends Component{

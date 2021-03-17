@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import './movieCard.css'
+import './css/movieCard.css'
 import { Component } from 'react';
-import star from './star.png'
+import star from './static/star.png'
 import axios from 'axios';
 import { withRouter } from 'react-router-dom';
 class MovieCard extends Component{
