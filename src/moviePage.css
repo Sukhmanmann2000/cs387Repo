@@ -1,0 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap');
+::-webkit-scrollbar {
+    width: 10px;
+    background: #DDD;
+    border-radius: 5px;
+}
+::-webkit-scrollbar-thumb {
+    background: #888; 
+    border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #777; 
+}
+.moviePage{
+    width: 98%;
+    font-family: 'Roboto', sans-serif;
+}
+.moviePageHeader{
+    width: 100%;
+    padding: 5px 1%;
+    border-bottom: 2px solid #CCC;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+.moviePageHomeButton{
+    padding: 10px 15px;
+    font-size: 17px;
+    font-weight: 500;
+    color: white;
+    border-radius: 20px;
+    border-width: 0px;
+    outline: none;
+    background-image: linear-gradient(#66CCFF,#3399CC);
+    text-align: center;
+    cursor: pointer; 
+}
+.moviePageLogoutButton{
+    padding: 10px 15px;
+    font-size: 17px;
+    font-weight: 500;
+    color: white;
+    border-radius: 20px;
+    border-width: 0px;
+    outline: none;
+    background-image: linear-gradient(#66CCFF,#3399CC);
+    text-align: center;
+    cursor: pointer; 
+}
+.moviePageMainHeader{
+    font-size: 30px;
+    font-weight: 900;
+    margin: 5px;
+    text-align: center;
+}
+.moviePageContent{
+    width: 98%;
+    padding: 0px 2%;
+}
+.moviePageTitle{
+    font-size: 30px;
+    font-weight: 900;
+    padding-top: 1%;
+    object-fit: contain;
+}
+.moviePageGenres {
+    padding: 10px 0px;
+    display: flex;
+    flex-direction: row;
+}
+.moviePageGenreElement{
+    padding: 5px 10px;
+    border-radius: 10px;
+    font-size: 17px;
+    color: white;
+    font-weight: 500;
+    margin: 3px;
+}
+.moviePageRatingDiv{
+    width: 20%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+}
+.moviePageInfo {
+    font-size: 20px;
+    padding-top: 10px;
+}
+.moviePageCriticReviewHeader {
+    font-size: 26px;
+    font-weight: 600;
+    margin-top: 2%;
+    margin-bottom: 1%;
+    text-decoration: underline;
+}
+.moviePageCriticReviewDiv{
+    width: 100%;
+    padding: 0.8% 1.5%;
+    border: 2px solid #AAA;
+    border-radius: 10px;
+    margin-bottom: 1%;
+}
+.moviePageCriticReviewName{
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.moviePageCriticReviewText{
+    font-size: 20px;
+    font-weight: normal;
+}
+.friendsDialogBoundary{
+    width: 500px;
+    overflow: hidden;
+}
+.dialogHeader{
+    width: 100%;
+    padding: 2% 0%;
+    text-align: center;
+    font-size: 25px;
+    font-weight: 600;
+}
+.dialogSearch{
+    width: 80%;
+    padding: 10px;
+    outline: none;
+    border-radius: 5px;
+    border: 1px solid #AAA;
+    font-size: 18px;
+    font-weight: 500;
+}
+.dialogFriendList{
+    width: 80%;
+    max-height: 400px;
+    overflow-y: auto;
+    /* background-color: red; */
+}

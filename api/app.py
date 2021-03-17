@@ -6,6 +6,7 @@ from flask_login import LoginManager,login_user, logout_user, login_required, cu
 from werkzeug.security import generate_password_hash, check_password_hash
 from py2neo import Graph
 import pandas as pd
+import numpy as np
 
 app = Flask(__name__)
 
@@ -94,6 +95,140 @@ def logoutUser():
             return {'loggedOut': True, 'logoutError': "NA"}
         except Exception as e:
             return {'loggedOut': False, 'logoutError': "Unknown Error"}
+
+@app.route('/getUsername',methods=['GET'])
+def getUsername():
+    if current_user.is_authenticated:
+        return {'isUserLoggedIn': True, 'username': current_user.name}
+    else:
+        return {'isUserLoggedIn': False, 'username': ""}
+
+@app.route('/getMovieList',methods=['GET'])
+@login_required
+def getMovieList():
+    if current_user.is_authenticated:
+        titles = ['A','B','C']
+        actors = ['E','F','G']
+        genres = ['Action', 'Horror', 'Thriller']
+        movieList = []
+        for i in range(12):
+            movieEntry = {}
+            movieEntry['id'] = i
+            movieEntry['title'] = titles[i%3]
+            movieEntry['year'] = i+2000
+            movieEntry['rating'] = round(2+3*np.random.rand(),2)
+            movieEntry['genre'] = ", ".join(genres)
+            movieEntry['genreList'] = genres
+            movieEntry['actors'] = ", ".join(actors)
+            movieEntry['director'] = 'Christopher Nolan'
+            movieList.append(movieEntry)
+            reviews = []
+            for i in range(3):
+                reviewDic = {}
+                reviewDic['reviewedBy'] = f"Critic {i+1}"
+                reviewDic['content'] = f"Review {i+1}"
+                reviews.append(reviewDic)
+            movieEntry['reviews'] = reviews
+            movieEntry['numUsers'] = 100000
+        return {'movieList': movieList}
+
+@app.route('/getFriendRecommendations',methods=['GET'])
+@login_required
+def getFriendRecommendations():
+    if current_user.is_authenticated:
+        friendList = [f"Friend {i}" for i in range(1,11)]
+        friendRecs = []
+        movieId = 1
+        for i in range(len(friendList)):
+            friendEntry = {}
+            friendEntry["name"] = friendList[i]
+            friendEntry["movies"] = []
+            for j in range(3):
+                movieEntry = {}
+                movieEntry['id'] = movieId
+                movieEntry['title'] = f"Movie {movieId}"
+                movieId+=1
+                movieEntry['year'] = j+2000
+                movieEntry['rating'] = round(2+3*np.random.rand(),2)
+                movieEntry['genre'] = ", ".join([f"Genre{k}" for k in range(3)])
+                movieEntry['genreList'] = [f"Genre{k}" for k in range(3)]
+                movieEntry['actors'] = ", ".join([f"Actor{k}" for k in range(3)])
+                movieEntry['director'] = 'Christopher Nolan'
+                reviews = []
+                for i in range(3):
+                    reviewDic = {}
+                    reviewDic['reviewedBy'] = f"Critic {i+1}"
+                    reviewDic['content'] = f"Review {i+1}"
+                    reviews.append(reviewDic)
+                movieEntry['reviews'] = reviews
+                movieEntry['numUsers'] = 100000
+                friendEntry["movies"].append(movieEntry)
+            friendRecs.append(friendEntry)
+        return {"friendRecs":friendRecs}
+
+@app.route('/getFriendList',methods=['GET'])
+@login_required
+def getFriendList():
+    if current_user.is_authenticated:
+        try:
+            friendList = [{"name":f"Friend {i}","id":i} for i in range(1,11)]
+            return {"friendList": friendList, "error":"NA"}
+        except Exception as e:
+            return {"friendList":[], "error": "Unknown Error"}
+
+@app.route('/getAllGenres',methods=['GET'])
+@login_required
+def getAllGenres():
+    if current_user.is_authenticated:
+        genreList = [
+            {'genre_id':1, 'genre': 'Action'},
+            {'genre_id':2, 'genre': 'Adventure'},
+            {'genre_id':3, 'genre': 'Animation'},
+            {'genre_id':4, 'genre': "Children's"},
+            {'genre_id':5, 'genre': 'Comedy'},
+            {'genre_id':6, 'genre': 'Crime'},
+            {'genre_id':7, 'genre': 'Documentary'},
+            {'genre_id':8, 'genre': 'Drama'},
+            {'genre_id':9, 'genre': 'Fantasy'},
+            {'genre_id':10, 'genre': 'Film-Noir'},
+            {'genre_id':11, 'genre': 'Horror'},
+            {'genre_id':12, 'genre': 'Musical'},
+            {'genre_id':13, 'genre': 'Mystery'},
+            {'genre_id':14, 'genre': 'Romance'},
+            {'genre_id':15, 'genre': 'Sci-Fi'},
+            {'genre_id':16, 'genre': 'Thriller'},
+            {'genre_id':17, 'genre': 'War'},
+            {'genre_id':18, 'genre': 'Western'},
+        ]
+        r = lambda : np.random.randint(0,255)
+        for x in genreList:
+            x['color'] = '#%02X%02X%02X' % (r(),r(),r())
+        return {'genreList': genreList}
+
+@app.route('/getFriendRequests',methods=['GET'])
+@login_required
+def getFriendRequests():
+    if current_user.is_authenticated:
+        reqList = [{"username":f"User{i}","id":i, "likedGenres": "Genre1, Genre2, Genre3"} for i in range(1,16)]
+        return {"requestQueue": reqList}
+
+@app.route('/getAllUsers',methods=['GET'])
+@login_required
+def getAllUsers():
+    if current_user.is_authenticated:
+        reqList = [{"username":f"User{i}","id":i, "likedGenres": "Genre1, Genre2, Genre3"} for i in range(1,51)]
+        return {"userList": reqList}
+
+@app.route('/sendRequestToUser', methods=['POST'])
+@login_required
+def sendRequestToUser():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            username = data['username'].strip()
+            return {'requestSent': True, 'error': "NA"}
+        except Exception as e:
+            return {'requestSent': False, 'error': "Unknown Error"}
 
 # @app.route('/getRecommendations', methods=['GET'])
 # def getRecommendationsS1(user_id,threshold):

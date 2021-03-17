@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+.movieCard {
+    font-family: 'Roboto', sans-serif;
+    width: 93%;
+    border-radius: 12px;
+    box-shadow: 2px 2px 5px #888;
+    padding: 10px;
+    margin-left: 5px;
+    margin-top: 20px;
+    cursor: pointer;
+}
+.friendmovieCard {
+    font-family: 'Roboto', sans-serif;
+    width: 93%;
+    border-radius: 8px;
+    box-shadow: 1px 1px 3px #888;
+    padding: 8px;
+    margin-left: 5px;
+    margin-top: 12px;
+    cursor: pointer;
+}
+.movieTitle {
+    width: 80%;
+    font-size: 25px;
+    font-weight: 500;
+}
+.friendmovieTitle {
+    width: 80%;
+    font-size: 18px;
+    font-weight: 500;
+}
+.movieInfo {
+    margin-top: 3px;
+    font-size: 13px;
+    font-weight: normal;
+}
+.friendmovieInfo {
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: normal;
+}

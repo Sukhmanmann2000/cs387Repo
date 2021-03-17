@@ -1,11 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap');
-.home {
+.login {
     font-family: 'Roboto', sans-serif;
 }
-.homeHeader {
+.loginHeader {
     margin-top: 2%;
     font-size: 40px;
-    font-weight: 900;
+    font-weight: 700;
     text-align: center;
 }
 .homeLogin {
@@ -15,10 +15,10 @@
     padding: 20px 30px;
     padding-right: 40px;
 }
-.homeLoginText {
+.loginText {
     width: 100%;
     margin-top: 4%;
-    font-weight: 600;
+    font-weight: 500;
     font-size: 17px;
 }
 .loginInput {
@@ -27,6 +27,7 @@
     margin-top: 5px;
     height: 25px;
     padding: 5px;
+    padding-left: 10px;
     border-radius: 5px;
     font-size: 16px;
     border-width: 1px;
@@ -35,7 +36,7 @@
     box-shadow: none;
     outline: none;
 }
-.homeLoginSubmit {
+.loginSubmit {
     width: 40%;
     padding: 10px;
     font-size: 20px;

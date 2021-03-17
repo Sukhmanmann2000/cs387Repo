@@ -12,7 +12,7 @@ export default class Login extends Component {
     }
     this.loginUser = this.loginUser.bind(this);
   }
-  componentWillMount(){
+  componentDidMount(){
     fetch('/checkUserLoggedIn').then(res => res.json()).then(data => {
       if (data.isUserLoggedIn)
         window.location.href = "/home";
@@ -40,8 +40,8 @@ export default class Login extends Component {
   }
   render(){
     return (
-      <div className="home">
-        <div className="homeHeader">
+      <div className="login">
+        <div className="loginHeader">
           Recommender System
         </div>
         <div style={{width: "100%",display: "flex", flexDirection: "row",justifyContent: "center",marginTop: "5%"}}>
@@ -52,18 +52,18 @@ export default class Login extends Component {
             {this.state.errorMessage ? <div className="loginError">
               {this.state.errorMessage}
             </div> : null}
-            <div className="homeLoginText">
+            <div className="loginText">
               Username:
             </div>
             <input type="text" className="loginInput" placeholder="Enter Username" onChange={(e) => {this.setState({username: e.target.value})}}></input>
-            <div className="homeLoginText">
+            <div className="loginText">
               Password:
             </div>
             <input type="Password" className="loginInput" placeholder="Enter Password" onChange={(e) => {this.setState({password: e.target.value})}}></input>
             <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "5%"}}>
-              <button className="homeLoginSubmit" onClick={this.loginUser}>Log In</button>
+              <button className="loginSubmit" onClick={this.loginUser}>Log In</button>
             </div>
-            <div style={{width: "100%", marginTop: "3%", textAlign: "center", fontSize: "17px", fontWeight: "600"}}>
+            <div style={{width: "100%", marginTop: "3%", textAlign: "center", fontSize: "17px", fontWeight: "500"}}>
               Don't have and account? <a href="/register">Sign Up</a>
             </div>
           </div>

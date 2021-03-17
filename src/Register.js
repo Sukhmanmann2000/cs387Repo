@@ -5,11 +5,11 @@ import axios from 'axios';
 import Select from 'react-select';
 
 const customSelectStyle = {
-    control: styles => ({ ...styles, backgroundColor: 'white', fontWeight: "600" }),
+    control: styles => ({ ...styles, backgroundColor: 'white', fontWeight: "500" }),
     option: (styles, { data, isDisabled, isFocused, isSelected }) => {
         return {
         ...styles,
-        fontWeight: "600",
+        fontWeight: "500",
         color: "black",
         cursor: isDisabled ? 'not-allowed' : 'default',
         };
@@ -28,7 +28,7 @@ export default class Register extends Component {
     }
     this.registerUser = this.registerUser.bind(this);
   }
-  componentWillMount(){
+  componentDidMount(){
     fetch('/checkUserLoggedIn').then(res => res.json()).then(data => {
         if (data.isUserLoggedIn)
             window.location.href = "/home";
@@ -65,8 +65,8 @@ export default class Register extends Component {
   }
   render(){
     return (
-      <div className="home">
-        <div className="homeHeader">
+      <div className="login">
+        <div className="loginHeader">
           Recommender System
         </div>
         <div style={{width: "100%",display: "flex", flexDirection: "row",justifyContent: "center",marginTop: "5%"}}>
@@ -77,19 +77,19 @@ export default class Register extends Component {
             {this.state.errorMessage ? <div className="loginError">
               {this.state.errorMessage}
             </div> : null}
-            <div className="homeLoginText">
+            <div className="loginText">
               Username:
             </div>
             <input type="text" className="loginInput" placeholder="Enter Username" onChange={(e) => {this.setState({username: e.target.value})}}></input>
-            <div className="homeLoginText">
+            <div className="loginText">
               Password:
             </div>
             <input type="Password" className="loginInput" placeholder="Enter Password" onChange={(e) => {this.setState({password: e.target.value})}}></input>
-            <div className="homeLoginText">
+            <div className="loginText">
               Name:
             </div>
             <input type="text" className="loginInput" placeholder="Enter your Full Name" onChange={(e) => {this.setState({name: e.target.value})}}></input>
-            <div className="homeLoginText" style={{marginBottom: "2%"}}>
+            <div className="loginText" style={{marginBottom: "2%"}}>
                 Gender:
             </div>
             <Select styles={customSelectStyle} 
@@ -98,14 +98,14 @@ export default class Register extends Component {
                 placeholder = "Select Gender"
                 onChange = {(e) => {this.setState({gender: e.value})}}
             />
-            <div className="homeLoginText">
+            <div className="loginText">
               Date of Birth:
             </div>
             <input type="date" placeholder="Select Date of Birth" onChange={(e) => {this.setState({dob: e.target.value})}} className="loginInput"></input>
             <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "5%"}}>
-              <button className="homeLoginSubmit" onClick={this.registerUser}>Sign Up</button>
+              <button className="loginSubmit" onClick={this.registerUser}>Sign Up</button>
             </div>
-            <div style={{width: "100%", marginTop: "3%", textAlign: "center", fontSize: "17px", fontWeight: "600"}}>
+            <div style={{width: "100%", marginTop: "3%", textAlign: "center", fontSize: "17px", fontWeight: "500"}}>
               Already have an account? <a href="/login">Login</a>
             </div>
           </div>
