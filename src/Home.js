@@ -15,6 +15,7 @@ export default class Home extends Component{
         super();
         this.state = {
             username: "",
+            isUserLoggedIn: false,
             movieList: [],
             friendRecs: [],
             profileDialogOpen: false,
@@ -25,8 +26,7 @@ export default class Home extends Component{
             searchOption: "Title",
             requestQueue: [],
             userList: [],
-            addFriendsSearchText: "",
-            filteredUsersList: []
+            addFriendsSearchText: ""
         }
         this.logoutUser = this.logoutUser.bind(this);
         this.toggleProfileDialog = this.toggleProfileDialog.bind(this);
@@ -39,11 +39,15 @@ export default class Home extends Component{
         this.sendRequestToUser = this.sendRequestToUser.bind(this);
     }
     componentDidMount(){
-        fetch('/getUsername').then(res => res.json()).then(data => {
+        fetch('/getUserDetails').then(res => res.json()).then(data => {
             if (!data.isUserLoggedIn)
                 window.location.href = "/login";
+            else if (data.isAdmin)
+                window.location.href = "/adminHome";
+            else if (data.isCritic)
+                window.location.href = "/criticHome";
             else
-                this.setState({username: data.username});
+                this.setState({username: data.username, isUserLoggedIn: true});
         });
         fetch('/getMovieList').then(res => res.json()).then(data => {
             this.setState({movieList: data.movieList});
@@ -86,7 +90,7 @@ export default class Home extends Component{
     }
     getAllUsers(){
         fetch('/getAllUsers').then(res => res.json()).then(data => {
-            this.setState({userList: data.userList, filteredUsersList: data.userList});
+            this.setState({userList: data.userList});
         });
     }
     handleGenreSelect(e){
@@ -113,11 +117,7 @@ export default class Home extends Component{
         this.setState({searchOption: e.target.value});
     }
     handleAddFriendsSearchChange(e){
-        const lowerSearchText = e.target.value.toLowerCase();
-        const filteredData = this.state.userList.filter(item => {
-            return item.username.toLowerCase().includes(lowerSearchText);
-        });
-        this.setState({addFriendsSearchText: e.target.value, filteredUsersList: filteredData});
+        this.setState({addFriendsSearchText: e.target.value});
     }
     sendRequestToUser(username){
         axios.post('/sendRequestToUser',{username: username})
@@ -133,6 +133,8 @@ export default class Home extends Component{
         })
     }
     render() {
+        if (!this.state.isUserLoggedIn)
+            return (<div></div>)
         var movieElement = this.state.movieList.map((e,id) => {return (<MovieCard movieDic={e}/>)});
         var friendElement = this.state.friendRecs.map((e,id) => {return (
             <div className="collapseDiv">
@@ -177,7 +179,9 @@ export default class Home extends Component{
                         </div>
                         <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", margin: "2% 0%", display: "flex",justifyContent: "center"}}>
                             <div className="addFriendsUserList">
-                                {this.state.filteredUsersList.map((e,lid)=>{return (
+                                {this.state.userList.map((e,lid)=>{
+                                if (e.username.toLowerCase().includes(this.state.addFriendsSearchText.toLowerCase()))
+                                    return (
                                     <div style={{width: "95%",display: "flex",flexDirection: "row", padding: "3px 5px", border: "1px solid #AAA", borderRadius: "4px", margin: "4px 0px"}}>
                                         <div style={{width: "75%"}}>
                                             <div style={{fontSize: "18px"}}>{e.username}</div>
@@ -196,7 +200,7 @@ export default class Home extends Component{
                     Recommender System
                 </div>
                 <div className="welcomeText">
-                    Welcome {this.state.username}!
+                    Welcome <b style={{fontWeight: "500", color: "#33CC00"}}>{this.state.username}</b>
                 </div>
                 <div className="homeLogoutDiv" onClick={this.logoutUser}>
                     Logout

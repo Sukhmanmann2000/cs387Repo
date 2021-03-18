@@ -3,6 +3,7 @@ import Login from './Login';
 import Register from './Register'
 import Home from './Home'
 import MoviePage from './MoviePage'
+import AdminHome from './AdminHome'
 import { Route, Switch, Redirect } from 'react-router-dom';
 
 export const Routes = () => {
@@ -16,6 +17,7 @@ export const Routes = () => {
                 <Route exact path="/register" component={Register} />
                 <Route exact path="/home" component={Home} />
                 <Route exact path="/moviePage" component={MoviePage} />
+                <Route exact path="/adminHome" component={AdminHome} />
             </Switch>
         </div>
     )

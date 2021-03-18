@@ -1,7 +1,8 @@
 import time, json
 from datetime import datetime as dts
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import CheckConstraint
 from flask_login import LoginManager,login_user, logout_user, login_required, current_user,UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from py2neo import Graph
@@ -18,24 +19,25 @@ db = SQLAlchemy(app)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True) # primary keys are required by SQLAlchemy
     username = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100))
-    name = db.Column(db.String(1000))
-    gender = db.Column(db.String(20))
-    dob = db.Column(db.DateTime, nullable=False)
+    password = db.Column(db.String(100), nullable = False)
+    name = db.Column(db.String(1000), nullable=False)
+    gender = db.Column(db.String(20), CheckConstraint("gender in ('Male', 'Female', 'Other')"))
+    dob = db.Column(db.DateTime)
+    isCritic = db.Column(db.Boolean, nullable=False)
 
-    def __init__(self, username, password, name, gender, dob):
+    def __init__(self, username, password, name, gender, dob, isCritic=False):
         self.username = username
         self.password = password
         self.name = name
         self.gender = gender
         self.dob = dob
+        self.isCritic = isCritic
 
 db.init_app(app)
 login_manager = LoginManager()
 login_manager.login_view = '/login'
 login_manager.init_app(app)
 
-# db.create_all()
 # graph = Graph(user="neo4j",password="werock1234")
 
 @login_manager.user_loader
@@ -44,7 +46,10 @@ def load_user(user_id):
 
 @app.route('/checkUserLoggedIn', methods=['GET'])
 def checkUserLoggedIn():
-    return {'isUserLoggedIn': current_user.is_authenticated}
+    if current_user.is_authenticated:
+        return {'isUserLoggedIn': True, 'isAdmin': current_user.id==1, 'isCritic': current_user.isCritic}
+    else:
+        return {'isUserLoggedIn': False, 'isAdmin': False, 'isCritic': False}
 
 @app.route('/loginUser', methods=['POST'])
 def loginUser():
@@ -55,14 +60,14 @@ def loginUser():
             password = data['password'].strip()
             user = User.query.filter_by(username = username).first()
             if not user:
-                return {'loggedIn': False, 'loginerror': "Username does not exist"}
+                return {'loggedIn': False, 'loginerror': "Username does not exist",'isAdmin': False, 'isCritic': False}
             elif not check_password_hash(user.password, password):
-                return {'loggedIn': False, 'loginerror': "Invalid Password"}
+                return {'loggedIn': False, 'loginerror': "Invalid Password",'isAdmin': False, 'isCritic': False}
             else:
                 login_user(user, remember=True)
-                return {'loggedIn': True, 'loginerror': "NA"}
+                return {'loggedIn': True, 'loginerror': "NA",'isAdmin': user.id==1, 'isCritic': user.isCritic}
         except Exception as e:
-            return {'loggedIn': False, 'loginerror': "Unknown Error"}
+            return {'loggedIn': False, 'loginerror': "Unknown Error",'isAdmin': False, 'isCritic': False}
 
 @app.route('/registerUser', methods=['POST'])
 def registerUser():
@@ -96,26 +101,25 @@ def logoutUser():
         except Exception as e:
             return {'loggedOut': False, 'logoutError': "Unknown Error"}
 
-@app.route('/getUsername',methods=['GET'])
-def getUsername():
+@app.route('/getUserDetails',methods=['GET'])
+def getUserDetails():
     if current_user.is_authenticated:
-        return {'isUserLoggedIn': True, 'username': current_user.name}
+        return {'isUserLoggedIn': True, 'username': current_user.name, 'isAdmin': current_user.id==1, 'isCritic': current_user.isCritic}
     else:
-        return {'isUserLoggedIn': False, 'username': ""}
+        return {'isUserLoggedIn': False, 'username': "", 'isAdmin': False, 'isCritic': False}
 
 @app.route('/getMovieList',methods=['GET'])
 @login_required
 def getMovieList():
     if current_user.is_authenticated:
-        titles = ['A','B','C']
-        actors = ['E','F','G']
+        actors = ['Actor1','Actor2','Actor3']
         genres = ['Action', 'Horror', 'Thriller']
         movieList = []
         for i in range(12):
             movieEntry = {}
             movieEntry['id'] = i
-            movieEntry['title'] = titles[i%3]
-            movieEntry['year'] = i+2000
+            movieEntry['title'] = f"Movie {i}"
+            movieEntry['year'] = i+1990
             movieEntry['rating'] = round(2+3*np.random.rand(),2)
             movieEntry['genre'] = ", ".join(genres)
             movieEntry['genreList'] = genres
@@ -229,6 +233,55 @@ def sendRequestToUser():
             return {'requestSent': True, 'error': "NA"}
         except Exception as e:
             return {'requestSent': False, 'error': "Unknown Error"}
+
+@app.route('/addCritic', methods=['POST'])
+@login_required
+def addCritic():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            username = data['username'].strip()
+            password = data['password'].strip()
+            name = data['name'].strip()
+            gender = data['gender'].strip()
+            dob = data['dob'].strip()
+            dtsObj = dts.strptime(dob,'%Y-%m-%d')
+            user = User.query.filter_by(username = username).first()
+            if user:
+                return {'success': False, 'error': "Username already exists"}
+            newCritic = User(username,generate_password_hash(password,method='sha256'),name,gender,dtsObj,True)
+            db.session.add(newCritic)
+            db.session.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/getAllCritics', methods=['GET'])
+@login_required
+def getAllCritics():
+    if current_user.is_authenticated:
+        criticList = [critic.username for critic in User.query.filter_by(isCritic = True)]
+        # criticList = [f"Critic{i}" for i in range(1,21)]
+        return {"criticList": criticList, "error": ""}
+
+@app.route('/removeCritic', methods=['POST'])
+@login_required
+def removeCritic():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            username = data['username'].strip()
+            user = User.query.filter_by(username = username).first()
+            if not user:
+                return {'success': False, 'error': "Username does not exist"}
+            elif not user.isCritic:
+                return {'success': False, 'error': "Given username is not a Critic"}
+            db.session.delete(user)
+            db.session.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+        
 
 # @app.route('/getRecommendations', methods=['GET'])
 # def getRecommendationsS1(user_id,threshold):
