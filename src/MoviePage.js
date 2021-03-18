@@ -13,7 +13,6 @@ export default class MoviePage extends Component{
             userRating: 0,
             errorMessage: "",
             friendList: [],
-            filteredList: [],
             selectedFriends: {},
             dialogOpen: false,
             searchText: ""
@@ -44,7 +43,7 @@ export default class MoviePage extends Component{
     }
     getFriendList(){
         fetch('/getFriendList').then(res => res.json()).then(data => {
-            this.setState({friendList: data.friendList, filteredList: data.friendList});
+            this.setState({friendList: data.friendList});
             let tempDic = {};
             for (let idx in data.friendList){
                 let item = data.friendList[idx];
@@ -57,11 +56,7 @@ export default class MoviePage extends Component{
         this.setState({dialogOpen: !this.state.dialogOpen});
     }
     handleSearchChange(e){
-        const lowerSearchText = e.target.value.toLowerCase();
-        const filteredData = this.state.friendList.filter(item => {
-            return item.name.toLowerCase().includes(lowerSearchText);
-        });
-        this.setState({searchText: e.target.value, filteredList: filteredData});
+        this.setState({searchText: e.target.value});
     }
     handleCheckBox(ce) {
         let tempDic = this.state.selectedFriends;
@@ -85,7 +80,9 @@ export default class MoviePage extends Component{
                         </div>
                         <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", display: "flex",justifyContent: "center"}}>
                             <div className="dialogFriendList">
-                                {this.state.filteredList.map((e,lid)=>{return (
+                                {this.state.friendList.map((e,lid)=>{
+                                if (e.name.toLowerCase().includes(this.state.searchText.toLowerCase()))
+                                    return (
                                     <div style={{width: "95%",display: "flex",flexDirection: "row", padding: "3px 0px"}}>
                                         <input name={e.id} style={{marginTop: "7px", width: "15px"}} checked={this.state.selectedFriends[e.id]} type="checkbox" onChange={this.handleCheckBox}></input>
                                         <div style={{marginLeft: "5px",fontSize: "18px"}}>{e.name}</div>

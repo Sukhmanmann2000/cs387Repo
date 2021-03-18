@@ -14,8 +14,14 @@ export default class Login extends Component {
   }
   componentDidMount(){
     fetch('/checkUserLoggedIn').then(res => res.json()).then(data => {
-      if (data.isUserLoggedIn)
-        window.location.href = "/home";
+      if (data.isUserLoggedIn){
+        if (data.isAdmin)
+          window.location.href = "/adminHome";
+        else if (data.isCritic)
+          window.location.href = "/criticHome";
+        else
+          window.location.href = "/home";
+      }
     });
   }
   loginUser() {
@@ -27,9 +33,13 @@ export default class Login extends Component {
     .then(res => {
       let data = res.data;
       if (data.loggedIn){
-        
         this.setState({errorMessage: ""});
-        window.location.href = "/home";
+        if (data.isAdmin)
+          window.location.href = "/adminHome";
+        else if (data.isCritic)
+          window.location.href = "/criticHome";
+        else
+          window.location.href = "/home";
       }
       else{
         this.setState({errorMessage: data.loginerror});

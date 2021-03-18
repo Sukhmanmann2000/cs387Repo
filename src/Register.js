@@ -30,8 +30,14 @@ export default class Register extends Component {
   }
   componentDidMount(){
     fetch('/checkUserLoggedIn').then(res => res.json()).then(data => {
-        if (data.isUserLoggedIn)
-            window.location.href = "/home";
+      if (data.isUserLoggedIn){
+        if (data.isAdmin)
+          window.location.href = "/adminHome";
+        else if (data.isCritic)
+          window.location.href = "/criticHome";
+        else
+          window.location.href = "/home";
+      }
     });
   }
   registerUser() {
@@ -54,7 +60,12 @@ export default class Register extends Component {
       let data = res.data;
       if (data.loggedIn){
         this.setState({errorMessage: ""});
-        window.location.href = "/home";
+        if (data.isAdmin)
+          window.location.href = "/adminHome";
+        else if (data.isCritic)
+          window.location.href = "/criticHome";
+        else
+          window.location.href = "/home";
       }
       else{
         this.setState({errorMessage: data.registererror});
@@ -93,7 +104,7 @@ export default class Register extends Component {
                 Gender:
             </div>
             <Select styles={customSelectStyle} 
-                options={[{value: 'male', label: 'Male'},{value: 'female', label: 'Female'}, {value: 'other', label: 'Other'}]}
+                options={[{value: 'Male', label: 'Male'},{value: 'Female', label: 'Female'}, {value: 'Other', label: 'Other'}]}
                 label="Select Gender"
                 placeholder = "Select Gender"
                 onChange = {(e) => {this.setState({gender: e.value})}}
