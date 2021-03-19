@@ -4,6 +4,9 @@ from sqlalchemy import CheckConstraint
 from flask_login import LoginManager,login_user, logout_user, login_required, current_user,UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime as dts
+from py2neo import Graph
+
+graph = Graph(name="recommendersystem",user="neo4j",password="werock1234")
 
 app = Flask(__name__)
 
@@ -32,11 +35,19 @@ class User(UserMixin, db.Model):
 def printAllUsers():
     for user in User.query.all():
         print(f"id: {user.id}, Username: {user.username}, isCritic: {user.isCritic}")
+    
+db.drop_all()
+db.create_all()
+dob = '2000-01-01'
+dtsObj = dts.strptime(dob,'%Y-%m-%d')
+admin = User('admin',generate_password_hash('werock1234',method='sha256'),'admin','Male',dtsObj)
+db.session.add(admin)
+db.session.commit()
 
-# db.drop_all()
-# db.create_all()
-# dob = '2000-01-01'
-# dtsObj = dts.strptime(dob,'%Y-%m-%d')
-# admin = User('admin',generate_password_hash('werock1234',method='sha256'),'admin','Male',dtsObj)
-# db.session.add(admin)
-# db.session.commit()
+tx = graph.begin()
+statement = "CREATE (a:Admin {username: 'admin', name: 'admin', gender: 'Male', dob: '01-01-2000'})"
+tx.run(statement)
+tx.commit()
+
+# # adding dummy users and making them friends
+# statement = "CREATE (a:User {username: 'dummyuser1', name: 'dummyuser1'}),(b:User {username: 'dummyuser2', name: 'dummyuser2'})"

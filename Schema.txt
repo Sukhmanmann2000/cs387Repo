@@ -28,3 +28,59 @@ acted_in
 directed
     from celebrity to Movies (for directors)
 
+User
+    username (primary key)
+    name (not null)
+    gender
+    dob
+
+friend 
+    from user to user
+    level
+
+request
+    from user to user
+
+likedGenre
+    from user to Genres
+
+favorite
+    from User to Celebrity
+
+rated
+    from User to Movies
+    rating
+
+recommended
+    from Movies to User
+    level
+
+Admin
+    username (primary key)
+    name (not null)
+    gender
+    dob
+
+Critic
+    username (primary key)
+    name (not null)
+    gender
+    dob
+
+review  
+    from Critic to Movies
+    rating
+    review_text
+
+Recommendation   (friend1 recommended friend2)
+    friend1
+    friend2 
+
+recommending_user
+    from Recommendation to User
+
+to_whom_recommended
+    from Recommendation to User
+
+movie_recommended
+    from Recommendation to Movies
