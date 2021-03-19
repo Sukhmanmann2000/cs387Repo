@@ -134,45 +134,49 @@ export default class CriticHome extends Component{
                                     <div style={{width: "100%"}}>
                                         <FormControl component="fieldset">
                                             <RadioGroup row aria-label="position" name="position" defaultValue="right">
-                                                <div style={{width: "100%",display: "flex", justifyContent: "center"}}>
-                                                    <FormControlLabel
-                                                        checked={this.state.searchOption === "Title"}
-                                                        value="Title"
-                                                        control={<Radio color="primary" />}
-                                                        label="By Title"
-                                                        labelPlacement="right"
-                                                        onChange={this.handleSearchOptionChange}
-                                                    />
+                                                <div style={{width: "100%",display: "flex", flexDirection: "row"}}>
+                                                    <div style={{width: "50%", textAlign: "right"}}>
+                                                        <FormControlLabel
+                                                            checked={this.state.searchOption === "Title"}
+                                                            value="Title"
+                                                            control={<Radio color="primary" />}
+                                                            onChange={this.handleSearchOptionChange}
+                                                        />
+                                                        </div>
+                                                    <div style={{width: "50%", display: "flex", alignItems: "center", marginLeft: "-9%"}}>By Title</div>
                                                 </div>
-                                                <div style={{width: "100%",display: "flex", justifyContent: "center"}}>
-                                                    <FormControlLabel
-                                                        checked={this.state.searchOption === "Actor"}
-                                                        value="Actor"
-                                                        control={<Radio color="primary" />}
-                                                        label="By Actor"
-                                                        labelPlacement="right"
-                                                        onChange={this.handleSearchOptionChange}
-                                                    />
+                                                <div style={{width: "100%",display: "flex", flexDirection: "row"}}>
+                                                    <div style={{width: "50%", textAlign: "right"}}>
+                                                        <FormControlLabel
+                                                            checked={this.state.searchOption === "Actor"}
+                                                            value="Actor"
+                                                            control={<Radio color="primary" />}
+                                                            onChange={this.handleSearchOptionChange}
+                                                        />
+                                                    </div>
+                                                    <div style={{width: "50%", display: "flex", alignItems: "center", marginLeft: "-9%"}}>By Actor</div>
                                                 </div>
-                                                <div style={{width: "100%",display: "flex", justifyContent: "center"}}>
-                                                    <FormControlLabel
-                                                        checked={this.state.searchOption === "Director"}
-                                                        value="Director"
-                                                        control={<Radio color="primary" />}
-                                                        label="By Director"
-                                                        labelPlacement="right"
-                                                        onChange={this.handleSearchOptionChange}
-                                                    />
+                                                <div style={{width: "100%",display: "flex", flexDirection: "row"}}>
+                                                    <div style={{width: "50%", textAlign: "right"}}>
+                                                        <FormControlLabel
+                                                            checked={this.state.searchOption === "Director"}
+                                                            value="Director"
+                                                            control={<Radio color="primary" />}
+                                                            onChange={this.handleSearchOptionChange}
+                                                        />
+                                                    </div>
+                                                    <div style={{width: "50%", display: "flex", alignItems: "center", marginLeft: "-9%"}}>By Director</div>
                                                 </div>
-                                                <div style={{width: "100%",display: "flex", justifyContent: "center"}}>
-                                                    <FormControlLabel
-                                                        checked={this.state.searchOption === "Year"}
-                                                        value="Year"
-                                                        control={<Radio color="primary" />}
-                                                        label="By Year"
-                                                        labelPlacement="right"
-                                                        onChange={this.handleSearchOptionChange}
-                                                    />
+                                                <div style={{width: "100%",display: "flex", flexDirection: "row"}}>
+                                                    <div style={{width: "50%", textAlign: "right"}}>
+                                                        <FormControlLabel
+                                                            checked={this.state.searchOption === "Year"}
+                                                            value="Year"
+                                                            control={<Radio color="primary" />}
+                                                            onChange={this.handleSearchOptionChange}
+                                                        />
+                                                    </div>
+                                                    <div style={{width: "50%", display: "flex", alignItems: "center", marginLeft: "-9%"}}>By Year</div>
                                                 </div>
                                             </RadioGroup>
                                         </FormControl>
