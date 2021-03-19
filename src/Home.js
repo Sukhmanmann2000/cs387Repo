@@ -229,7 +229,7 @@ export default class Home extends Component{
                     <div className="addFriendsDialogBoundary">
                         <div className="addFriendsDialogHeader">Add Friends</div>
                         <div style={{width: "100%", display: "flex",justifyContent: "center"}}>
-                            <input type="text" className="addFriendsDialogSearch" placeholder="Search All Users" onChange={this.handleRemoveFriendsSearchChange}></input>
+                            <input type="text" className="addFriendsDialogSearch" placeholder="Search All Users" onChange={this.handleAddFriendsSearchChange}></input>
                         </div>
                         <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", margin: "2% 0%", display: "flex",justifyContent: "center"}}>
                             <div className="addFriendsUserList">
