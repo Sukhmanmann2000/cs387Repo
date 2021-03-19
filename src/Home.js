@@ -361,8 +361,8 @@ export default class Home extends Component{
                                 </FormControl>
                             </div>
                             <div className="editYourProfileDiv">
-                                <div className="editYourProfile" onClick={() => {this.getAllGenres();this.toggleProfileDialog();}}>Edit Liked Genres</div>
-                                <div className="editYourProfile" style={{marginLeft: "3%"}} onClick={() => {this.getWatchHistory();this.toggleWatchHistoryDialog();}}>Watch History</div>
+                                <div className="editYourProfile" style={{width: "31%", fontSize: "1.1vw"}} onClick={() => {this.getAllGenres();this.toggleProfileDialog();}}>Edit Liked Genres</div>
+                                <div className="editYourProfile" style={{width: "31%",fontSize: "1.1vw",marginLeft: "3%"}} onClick={() => {this.getWatchHistory();this.toggleWatchHistoryDialog();}}>Watch History</div>
                             </div>
                             <div style={{width: "100%", display: "flex", justifyContent: "center", margin: "2% 0%"}}>
                                 <div className="requestQueueOuterDiv">
@@ -384,8 +384,8 @@ export default class Home extends Component{
                                 </div>
                             </div>
                             <div className="editYourProfileDiv">
-                                <div className="editYourProfile" onClick={() => {this.getAllUsers();this.toggleAddFriendsDialog();}}>Add Friends</div>
-                                <div className="editYourProfile" style={{marginLeft: "3%"}} onClick={() => {this.getAllFriends();this.toggleRemoveFriendsDialog();}}>Remove Friends</div>
+                                <div className="editYourProfile" style={{width: "31%", fontSize: "1.1vw"}} onClick={() => {this.getAllUsers();this.toggleAddFriendsDialog();}}>Add Friends</div>
+                                <div className="editYourProfile" style={{width: "31%", fontSize: "1.1vw",marginLeft: "3%"}} onClick={() => {this.getAllFriends();this.toggleRemoveFriendsDialog();}}>Remove Friends</div>
                             </div>
                         </div>
                     </div>
