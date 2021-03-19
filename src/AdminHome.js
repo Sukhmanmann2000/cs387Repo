@@ -41,6 +41,9 @@ export default class AdminHome extends Component{
             movieURL: "",
             movieRating: "",
             movieDuration: "",
+            movieDirector: "",
+            movieActor: "",
+            movieActorList: [],
             genreList: [],
             selectedGenres: {}
         }
@@ -52,6 +55,7 @@ export default class AdminHome extends Component{
         this.handleRemoveCriticSearchChange = this.handleRemoveCriticSearchChange.bind(this);
         this.removeCritic = this.removeCritic.bind(this);
         this.toggleAddMovieDialog = this.toggleAddMovieDialog.bind(this);
+        this.addActor = this.addActor.bind(this);
         this.addMovie = this.addMovie.bind(this);
         this.getAllGenres = this.getAllGenres.bind(this);
         this.handleGenreSelect = this.handleGenreSelect.bind(this);
@@ -156,6 +160,11 @@ export default class AdminHome extends Component{
     addMovie(){
         this.toggleAddMovieDialog();
     }
+    addActor(){
+        var actorList = this.state.movieActorList;
+        actorList.push(this.state.movieActor);
+        this.setState({movieActorList: actorList, movieActor: ""});
+    }
     handleRemoveCriticSearchChange(e){
         this.setState({removeCriticSearchText: e.target.value});
     }
@@ -251,10 +260,22 @@ export default class AdminHome extends Component{
                                 Title:
                             </div>
                             <input type="text" className="adminHomeDialogInput" placeholder="Enter Title" value={this.state.movieTitle} onChange={(e) => {this.setState({movieTitle: e.target.value})}}></input>
-                            <div className="adminHomeDialogLabel">
-                                Year Released:
+                            <div style={{width: "97%", display: "flex", flexDirection: "row", justifyContent: "space-between",marginTop: "1%"}}>
+                                <div style={{width: "49%"}}>
+                                    <div className="adminHomeDialogLabel">
+                                        Year Released:
+                                    </div>
+                                    <input type="number" step="1" className="adminHomeDialogInput" placeholder="Enter Year Released" value={this.state.movieYear} onChange={(e) => {this.setState({movieYear: e.target.value})}}></input>
+                                </div>
+                                <div style={{width: "49%"}}>
+                                    <div className="adminHomeDialogLabel">
+                                        Movie URL:
+                                    </div>
+                                    <input type="text" className="adminHomeDialogInput" placeholder="Enter Movie URL" value={this.state.movieURL} onChange={(e) => {this.setState({movieURL: e.target.value})}}></input>
+                                </div>
                             </div>
-                            <input type="number" step="1" className="adminHomeDialogInput" placeholder="Enter Year Released" value={this.state.movieYear} onChange={(e) => {this.setState({movieYear: e.target.value})}}></input>
+                            
+                            
                             <div className="adminHomeDialogLabel">
                                 Select Genres:
                             </div>
@@ -270,26 +291,46 @@ export default class AdminHome extends Component{
                                     )})}
                                 </div>
                             </div>
-                            <div className="adminHomeDialogLabel">
-                                Movie URL:
-                            </div>
-                            <input type="text" className="adminHomeDialogInput" placeholder="Enter Movie URL" value={this.state.movieURL} onChange={(e) => {this.setState({movieURL: e.target.value})}}></input>
-                            <div style={{width: "96%", display: "flex", flexDirection: "row", justifyContent: "space-between",marginTop: "1.5%"}}>
-                                <div style={{width: "48%"}}>
+                            
+                            <div style={{width: "97%", display: "flex", flexDirection: "row", justifyContent: "space-between",marginTop: "1%"}}>
+                                <div style={{width: "28%"}}>
                                     <div className="adminHomeDialogLabel">
                                         Admin Rating:
                                     </div>
                                     <input type="number" step="0.01" placeholder="Enter Admin Rating" value={this.state.movieRating} onChange={(e) => {this.setState({movieRating: e.target.value})}} className="adminHomeDialogInput"></input>
                                 </div>
-                                <div style={{width: "48%"}}>
+                                <div style={{width: "33%"}}>
                                     <div className="adminHomeDialogLabel">
                                         Duration (mins):
                                     </div>
                                     <input type="number" step="1" placeholder="Enter Movie Duration" value={this.state.movieDuration} onChange={(e) => {this.setState({movieDuration: e.target.value})}} className="adminHomeDialogInput"></input>
                                 </div>
+                                <div style={{width: "33%"}}>
+                                    <div className="adminHomeDialogLabel">
+                                        Director:
+                                    </div>
+                                    <input type="text" placeholder="Enter Director Name" value={this.state.movieDirector} onChange={(e) => {this.setState({movieDirector: e.target.value})}} className="adminHomeDialogInput"></input>
+                                </div>
                             </div>
-                            <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "5%"}}>
-                                <button className="loginSubmit" onClick={this.addMovie}>Add Movie</button>
+                            {this.state.movieActorList.length > 0 ? 
+                            <div style={{width: "100%", textAlign: "center", marginTop: "1%"}}>
+                                <b style={{fontSize: "20px", fontWeight: "500", marginBottom: "1%"}}>Actor List</b>
+                                {this.state.movieActorList.map((e,id) => {
+                                    return(
+                                        <div style={{width: "100%", textAlign: "center"}}>{e}</div>
+                                    )
+                                })}
+                            </div> : null}
+                            <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "2%"}}>
+                                <div style={{width: "55%"}}>
+                                    <input type="text" placeholder="Enter Actor Name" value={this.state.movieActor} onChange={(e) => {this.setState({movieActor: e.target.value})}} className="adminHomeDialogInput"></input>
+                                </div>
+                                <div style={{width: "30%", display: "flex", justifyContent: "center",alignItems: "center"}}>
+                                    <button className="adminHomeAddActor" onClick={this.addActor}>Add Actor</button>
+                                </div>
+                            </div>
+                            <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "4%"}}>
+                                <button className="adminHomeAddMovieSubmit" onClick={this.addMovie}>Add Movie</button>
                             </div>
                         </div>
                     </div>
