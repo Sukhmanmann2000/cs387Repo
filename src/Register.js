@@ -30,13 +30,23 @@ export default class Register extends Component {
   }
   componentDidMount(){
     fetch('/checkUserLoggedIn').then(res => res.json()).then(data => {
-        if (data.isUserLoggedIn)
-            window.location.href = "/home";
+      if (data.isUserLoggedIn){
+        if (data.isAdmin)
+          window.location.href = "/adminHome";
+        else if (data.isCritic)
+          window.location.href = "/criticHome";
+        else
+          window.location.href = "/home";
+      }
     });
   }
   registerUser() {
     if (!this.state.username || !this.state.password || !this.state.name || !this.state.gender || !this.state.dob){
         this.setState({errorMessage: "Please enter the required Details"});
+        return;
+    }
+    else if (this.state.username.includes(" ")){
+        this.setState({errorMessage: "Username must not have spaces"});
         return;
     }
     else if (this.state.password.length < 5){
@@ -54,7 +64,12 @@ export default class Register extends Component {
       let data = res.data;
       if (data.loggedIn){
         this.setState({errorMessage: ""});
-        window.location.href = "/home";
+        if (data.isAdmin)
+          window.location.href = "/adminHome";
+        else if (data.isCritic)
+          window.location.href = "/criticHome";
+        else
+          window.location.href = "/home";
       }
       else{
         this.setState({errorMessage: data.registererror});
@@ -93,7 +108,7 @@ export default class Register extends Component {
                 Gender:
             </div>
             <Select styles={customSelectStyle} 
-                options={[{value: 'male', label: 'Male'},{value: 'female', label: 'Female'}, {value: 'other', label: 'Other'}]}
+                options={[{value: 'Male', label: 'Male'},{value: 'Female', label: 'Female'}, {value: 'Other', label: 'Other'}]}
                 label="Select Gender"
                 placeholder = "Select Gender"
                 onChange = {(e) => {this.setState({gender: e.value})}}

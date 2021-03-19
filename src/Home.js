@@ -15,10 +15,13 @@ export default class Home extends Component{
         super();
         this.state = {
             username: "",
+            isUserLoggedIn: false,
             movieList: [],
             friendRecs: [],
             profileDialogOpen: false,
             addFriendsDialogOpen: false,
+            removeFriendsDialogOpen: false,
+            watchHistoryDialogopen: false,
             genreList: [],
             likedGenres: {},
             selectGenreDialogError: "",
@@ -26,24 +29,41 @@ export default class Home extends Component{
             requestQueue: [],
             userList: [],
             addFriendsSearchText: "",
-            filteredUsersList: []
+            removeFriendsSearchText: "",
+            watchHistorySearchText: "",
+            allFriendsList: [],
+            watchHistory: []
         }
-        this.logoutUser = this.logoutUser.bind(this);
         this.toggleProfileDialog = this.toggleProfileDialog.bind(this);
         this.toggleAddFriendsDialog = this.toggleAddFriendsDialog.bind(this);
-        this.getAllGenres = this.getAllGenres.bind(this);
-        this.handleGenreSelect = this.handleGenreSelect.bind(this);
-        this.saveGenres = this.saveGenres.bind(this);
+        this.toggleWatchHistoryDialog = this.toggleWatchHistoryDialog.bind(this);
+        this.toggleRemoveFriendsDialog = this.toggleRemoveFriendsDialog.bind(this);
+
         this.handleSearchOptionChange = this.handleSearchOptionChange.bind(this);
         this.handleAddFriendsSearchChange = this.handleAddFriendsSearchChange.bind(this);
+        this.handleRemoveFriendsSearchChange = this.handleRemoveFriendsSearchChange.bind(this);
+        this.handleWatchHistorySearchChange = this.handleWatchHistorySearchChange.bind(this);
+
+        this.handleGenreSelect = this.handleGenreSelect.bind(this);
+        this.getAllGenres = this.getAllGenres.bind(this);
+        this.getAllFriends = this.getAllFriends.bind(this);
+        this.getWatchHistory = this.getWatchHistory.bind(this);
+
+        this.logoutUser = this.logoutUser.bind(this);
+        this.removeFriend = this.removeFriend.bind(this);
+        this.saveGenres = this.saveGenres.bind(this);
         this.sendRequestToUser = this.sendRequestToUser.bind(this);
     }
     componentDidMount(){
-        fetch('/getUsername').then(res => res.json()).then(data => {
+        fetch('/getUserDetails').then(res => res.json()).then(data => {
             if (!data.isUserLoggedIn)
                 window.location.href = "/login";
+            else if (data.isAdmin)
+                window.location.href = "/adminHome";
+            else if (data.isCritic)
+                window.location.href = "/criticHome";
             else
-                this.setState({username: data.username});
+                this.setState({username: data.username, isUserLoggedIn: true});
         });
         fetch('/getMovieList').then(res => res.json()).then(data => {
             this.setState({movieList: data.movieList});
@@ -73,6 +93,12 @@ export default class Home extends Component{
     toggleAddFriendsDialog(){
         this.setState({addFriendsDialogOpen: !this.state.addFriendsDialogOpen});
     }
+    toggleRemoveFriendsDialog(){
+        this.setState({removeFriendsDialogOpen: !this.state.removeFriendsDialogOpen});
+    }
+    toggleWatchHistoryDialog(){
+        this.setState({watchHistoryDialogopen: !this.state.watchHistoryDialogopen});
+    }
     getAllGenres(){
         fetch('/getAllGenres').then(res => res.json()).then(data => {
             this.setState({genreList: data.genreList});
@@ -86,7 +112,17 @@ export default class Home extends Component{
     }
     getAllUsers(){
         fetch('/getAllUsers').then(res => res.json()).then(data => {
-            this.setState({userList: data.userList, filteredUsersList: data.userList});
+            this.setState({userList: data.userList});
+        });
+    }
+    getAllFriends(){
+        fetch('/getFriendList').then(res => res.json()).then(data => {
+            this.setState({allFriendsList: data.friendList});
+        });
+    }
+    getWatchHistory(){
+        fetch('/getWatchHistory').then(res => res.json()).then(data => {
+            this.setState({watchHistory: data.watchHistory});
         });
     }
     handleGenreSelect(e){
@@ -113,11 +149,13 @@ export default class Home extends Component{
         this.setState({searchOption: e.target.value});
     }
     handleAddFriendsSearchChange(e){
-        const lowerSearchText = e.target.value.toLowerCase();
-        const filteredData = this.state.userList.filter(item => {
-            return item.username.toLowerCase().includes(lowerSearchText);
-        });
-        this.setState({addFriendsSearchText: e.target.value, filteredUsersList: filteredData});
+        this.setState({addFriendsSearchText: e.target.value});
+    }
+    handleRemoveFriendsSearchChange(e){
+        this.setState({removeFriendsSearchText: e.target.value});
+    }
+    handleWatchHistorySearchChange(e){
+        this.setState({watchHistorySearchText: e.target.value});
     }
     sendRequestToUser(username){
         axios.post('/sendRequestToUser',{username: username})
@@ -132,7 +170,25 @@ export default class Home extends Component{
             console.log(error);
         })
     }
+    removeFriend(username){
+        var confirmation = window.confirm("Remove "+username+" from Friends?");
+        if (confirmation){
+            axios.post('/removeFriend',{username: username})
+            .then(res => {
+            let data = res.data;
+            if (data.success){
+                alert("Removed " + username + " from Friends successfully");
+            }
+            else
+                alert(data.error);
+            }, (error) => {
+                console.log(error);
+            });
+        }
+    } 
     render() {
+        if (!this.state.isUserLoggedIn)
+            return (<div></div>)
         var movieElement = this.state.movieList.map((e,id) => {return (<MovieCard movieDic={e}/>)});
         var friendElement = this.state.friendRecs.map((e,id) => {return (
             <div className="collapseDiv">
@@ -173,11 +229,13 @@ export default class Home extends Component{
                     <div className="addFriendsDialogBoundary">
                         <div className="addFriendsDialogHeader">Add Friends</div>
                         <div style={{width: "100%", display: "flex",justifyContent: "center"}}>
-                            <input type="text" className="addFriendsDialogSearch" placeholder="Search All Users" onChange={this.handleAddFriendsSearchChange}></input>
+                            <input type="text" className="addFriendsDialogSearch" placeholder="Search All Users" onChange={this.handleRemoveFriendsSearchChange}></input>
                         </div>
                         <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", margin: "2% 0%", display: "flex",justifyContent: "center"}}>
                             <div className="addFriendsUserList">
-                                {this.state.filteredUsersList.map((e,lid)=>{return (
+                                {this.state.userList.map((e,lid)=>{
+                                if (e.username.toLowerCase().includes(this.state.addFriendsSearchText.toLowerCase()))
+                                    return (
                                     <div style={{width: "95%",display: "flex",flexDirection: "row", padding: "3px 5px", border: "1px solid #AAA", borderRadius: "4px", margin: "4px 0px"}}>
                                         <div style={{width: "75%"}}>
                                             <div style={{fontSize: "18px"}}>{e.username}</div>
@@ -192,11 +250,52 @@ export default class Home extends Component{
                         </div>
                     </div>
                 </Dialog>
+                <Dialog open={this.state.removeFriendsDialogOpen} onClose={this.toggleRemoveFriendsDialog}>
+                    <div className="addFriendsDialogBoundary">
+                        <div className="addFriendsDialogHeader">Remove Friends</div>
+                        <div style={{width: "100%", display: "flex",justifyContent: "center"}}>
+                            <input type="text" className="addFriendsDialogSearch" placeholder="Search All Friends" onChange={this.handleAddFriendsSearchChange}></input>
+                        </div>
+                        <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", margin: "2% 0%", display: "flex",justifyContent: "center"}}>
+                            <div className="addFriendsUserList">
+                                {this.state.allFriendsList.map((e,lid)=>{
+                                if (e.username.toLowerCase().includes(this.state.addFriendsSearchText.toLowerCase()))
+                                    return (
+                                    <div style={{width: "95%",display: "flex",flexDirection: "row", padding: "3px 5px", border: "1px solid #AAA", borderRadius: "4px", margin: "4px 0px"}}>
+                                        <div style={{width: "95%"}}>
+                                            <div style={{fontSize: "18px"}}>{e.username}</div>            
+                                        </div>
+                                        <div style={{width: "5%", display: "flex", alignItems: "center"}}>
+                                            <CancelRoundedIcon style={{color: "red", cursor: "pointer"}} onClick={() => {this.removeFriend(e.username)}}/>
+                                        </div>
+                                    </div>
+                                )})}
+                            </div>
+                        </div>
+                    </div>
+                </Dialog>
+                <Dialog open={this.state.watchHistoryDialogopen} onClose={this.toggleWatchHistoryDialog}>
+                    <div className="addFriendsDialogBoundary">
+                        <div className="addFriendsDialogHeader">Watched Movies</div>
+                        <div style={{width: "100%", display: "flex",justifyContent: "center"}}>
+                            <input type="text" className="addFriendsDialogSearch" placeholder="Search Movies by Title" onChange={this.handleWatchHistorySearchChange}></input>
+                        </div>
+                        <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", margin: "2% 0%", display: "flex",justifyContent: "center"}}>
+                            <div className="addFriendsUserList">
+                                {this.state.watchHistory.map((e,lid)=>{
+                                if (e.title.toLowerCase().includes(this.state.watchHistorySearchText.toLowerCase()))
+                                    return (
+                                    <FriendMovieCard movieDic={e}/>
+                                )})}
+                            </div>
+                        </div>
+                    </div>
+                </Dialog>
                 <div className="homeHeading">
                     Recommender System
                 </div>
                 <div className="welcomeText">
-                    Welcome {this.state.username}!
+                    Welcome <b style={{fontWeight: "500", color: "#33CC00"}}>{this.state.username}</b>
                 </div>
                 <div className="homeLogoutDiv" onClick={this.logoutUser}>
                     Logout
@@ -262,7 +361,8 @@ export default class Home extends Component{
                                 </FormControl>
                             </div>
                             <div className="editYourProfileDiv">
-                                <div className="editYourProfile" onClick={() => {this.getAllGenres();this.toggleProfileDialog();}}>Edit Liked Genres</div>
+                                <div className="editYourProfile" style={{width: "31%", fontSize: "1.1vw"}} onClick={() => {this.getAllGenres();this.toggleProfileDialog();}}>Edit Liked Genres</div>
+                                <div className="editYourProfile" style={{width: "31%",fontSize: "1.1vw",marginLeft: "3%"}} onClick={() => {this.getWatchHistory();this.toggleWatchHistoryDialog();}}>Watch History</div>
                             </div>
                             <div style={{width: "100%", display: "flex", justifyContent: "center", margin: "2% 0%"}}>
                                 <div className="requestQueueOuterDiv">
@@ -284,7 +384,8 @@ export default class Home extends Component{
                                 </div>
                             </div>
                             <div className="editYourProfileDiv">
-                                <div className="editYourProfile" onClick={() => {this.getAllUsers();this.toggleAddFriendsDialog();}}>Add Friends</div>
+                                <div className="editYourProfile" style={{width: "31%", fontSize: "1.1vw"}} onClick={() => {this.getAllUsers();this.toggleAddFriendsDialog();}}>Add Friends</div>
+                                <div className="editYourProfile" style={{width: "31%", fontSize: "1.1vw",marginLeft: "3%"}} onClick={() => {this.getAllFriends();this.toggleRemoveFriendsDialog();}}>Remove Friends</div>
                             </div>
                         </div>
                     </div>

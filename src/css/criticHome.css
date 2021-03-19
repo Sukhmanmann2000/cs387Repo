@@ -1,0 +1,84 @@
+.criticHomeMoviesPanel {
+    width: 63%;
+    height: 100%;
+    padding: 10px;
+    overflow: hidden;
+}
+.criticHomeAddMoviePanel{
+    width: 37%;
+    height: 100%;
+    overflow-y: auto;
+    border-left: 2px solid #CCC;
+}
+.criticHomeAddMovieDiv{
+    width: 85%;
+    display: flex;
+    justify-content: center;
+    border: 1px solid #AAA;
+    border-radius: 10px;
+}
+.criticHomeAddMovieError{
+    width: 94%;
+    margin: 10px 0px 10px 0px;
+    background-color: red;
+    color: white;
+    font-size: 17px;
+    font-weight: 600;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+}
+.criticHomeAddMovieLabel {
+    width: 100%;
+    margin-top: 1%;
+    margin-left: 5px;
+    font-weight: 500;
+    font-size: 17px;
+}
+.criticHomeAddMovieInput {
+    width: 94%;
+    color: #666;
+    margin-top: 5px;
+    margin-left: 5px;
+    height: 25px;
+    padding: 5px;
+    padding-left: 10px;
+    border-radius: 5px;
+    font-size: 16px;
+    border-width: 1px;
+    font-weight: 400;
+    border: 1px solid #CCC;
+    box-shadow: none;
+    outline: none;
+}
+.criticHomeSearchMovie {
+    width: 48%;
+    padding: 10px;
+    outline: none;
+    border-radius: 5px;
+    border: 0px;
+    font-size: 18px;
+    font-weight: 500;
+    border-radius: 5px;
+    border: 1px solid #AAA;
+    border-right: 0px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+.criticHomeSearchMovieIcon {
+    width: 3.5%;
+    height: auto;
+    padding: 3px;
+    padding-right: 5px;
+    border-radius: 5px;
+    border-bottom-left-radius: 0px;
+    border-top-left-radius: 0px;
+    border: 1px solid #AAA;
+    border-left: 0px;
+    cursor: pointer;
+}
+.criticHomeMovieListPanel {
+    width: 90%;
+    height: 75vh;
+    overflow-y: auto;
+}
