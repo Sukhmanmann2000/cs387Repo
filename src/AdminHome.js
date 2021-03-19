@@ -39,7 +39,10 @@ export default class AdminHome extends Component{
             movieTitle: "",
             movieYear: "",
             movieURL: "",
-            movieRating: ""
+            movieRating: "",
+            movieDuration: "",
+            genreList: [],
+            selectedGenres: {}
         }
         this.logoutUser = this.logoutUser.bind(this);
         this.toggleAddCriticDialog = this.toggleAddCriticDialog.bind(this);
@@ -50,6 +53,8 @@ export default class AdminHome extends Component{
         this.removeCritic = this.removeCritic.bind(this);
         this.toggleAddMovieDialog = this.toggleAddMovieDialog.bind(this);
         this.addMovie = this.addMovie.bind(this);
+        this.getAllGenres = this.getAllGenres.bind(this);
+        this.handleGenreSelect = this.handleGenreSelect.bind(this);
     }
     componentDidMount(){
         fetch('/getUserDetails').then(res => res.json()).then(data => {
@@ -113,7 +118,25 @@ export default class AdminHome extends Component{
                 console.log(data.error);
         });
     }
+    getAllGenres(){
+        fetch('/getAllGenres').then(res => res.json()).then(data => {
+            this.setState({genreList: data.genreList});
+            var tempDic = {};
+            for (let x of data.genreList){
+                tempDic[x.genre_id] = false;
+            }
+            this.setState({selectedGenres: tempDic});
+        });
+    }
+    handleGenreSelect(e){
+        var tempDic = this.state.selectedGenres;
+        tempDic[e.genre_id] = !tempDic[e.genre_id];
+        this.setState({selectedGenres: tempDic});
+    }
     removeCritic(criticUsername){
+        var confirmation = window.confirm("Remove "+criticUsername+" from Critics?")
+        if (!confirmation)
+            return;
         axios.post('/removeCritic',{
             username: criticUsername, 
         })
@@ -162,11 +185,11 @@ export default class AdminHome extends Component{
                             <div className="adminHomeDialogLabel">
                                 Username:
                             </div>
-                            <input type="text" className="adminHomeDialogInput" placeholder="Enter Username" value={this.state.criticUsername} onChange={(e) => {this.setState({criticUsername: e.target.value})}}></input>
+                            <input id="criticUsername" type="text" className="adminHomeDialogInput" placeholder="Enter Username" value={this.state.criticUsername} onChange={(e) => {this.setState({criticUsername: e.target.value})}}></input>
                             <div className="adminHomeDialogLabel">
                                 Password:
                             </div>
-                            <input type="Password" className="adminHomeDialogInput" placeholder="Enter Password" value={this.state.criticPassword} onChange={(e) => {this.setState({criticPassword: e.target.value})}}></input>
+                            <input id="criticPassword" type="Password" className="adminHomeDialogInput" placeholder="Enter Password" value={this.state.criticPassword} onChange={(e) => {this.setState({criticPassword: e.target.value})}}></input>
                             <div className="adminHomeDialogLabel">
                                 Name:
                             </div>
@@ -216,7 +239,7 @@ export default class AdminHome extends Component{
                     </div>
                 </Dialog>
                 <Dialog open={this.state.addMovieDialogOpen} onClose={this.toggleAddMovieDialog}>
-                    <div className="addCriticDialogDiv">
+                    <div className="addMovieDialogDiv">
                         <div style={{width: "95%", padding: "3% 0%"}}>
                             <div style={{width: "100%",textAlign: "center", fontSize: "25px", fontWeight: "bold", color: "orange"}}>
                                 Add Movie
@@ -233,13 +256,38 @@ export default class AdminHome extends Component{
                             </div>
                             <input type="number" step="1" className="adminHomeDialogInput" placeholder="Enter Year Released" value={this.state.movieYear} onChange={(e) => {this.setState({movieYear: e.target.value})}}></input>
                             <div className="adminHomeDialogLabel">
+                                Select Genres:
+                            </div>
+                            <div className="addMovieGenreListBoundary">
+                                <div className="addMovieGenreListDiv">
+                                    {this.state.genreList.map((e,id) => {return (
+                                        <div className="addMovieGenreElement" 
+                                        onClick={() => {this.handleGenreSelect(e)}} 
+                                        style={this.state.selectedGenres[e.genre_id]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
+                                        >
+                                            {e.genre}
+                                        </div>   
+                                    )})}
+                                </div>
+                            </div>
+                            <div className="adminHomeDialogLabel">
                                 Movie URL:
                             </div>
                             <input type="text" className="adminHomeDialogInput" placeholder="Enter Movie URL" value={this.state.movieURL} onChange={(e) => {this.setState({movieURL: e.target.value})}}></input>
-                            <div className="adminHomeDialogLabel">
-                                Admin Rating:
+                            <div style={{width: "96%", display: "flex", flexDirection: "row", justifyContent: "space-between",marginTop: "1.5%"}}>
+                                <div style={{width: "48%"}}>
+                                    <div className="adminHomeDialogLabel">
+                                        Admin Rating:
+                                    </div>
+                                    <input type="number" step="0.01" placeholder="Enter Admin Rating" value={this.state.movieRating} onChange={(e) => {this.setState({movieRating: e.target.value})}} className="adminHomeDialogInput"></input>
+                                </div>
+                                <div style={{width: "48%"}}>
+                                    <div className="adminHomeDialogLabel">
+                                        Duration (mins):
+                                    </div>
+                                    <input type="number" step="1" placeholder="Enter Movie Duration" value={this.state.movieDuration} onChange={(e) => {this.setState({movieDuration: e.target.value})}} className="adminHomeDialogInput"></input>
+                                </div>
                             </div>
-                            <input type="number" step="0.01" placeholder="Enter Admin Rating" value={this.state.movieRating} onChange={(e) => {this.setState({movieRating: e.target.value})}} className="adminHomeDialogInput"></input>
                             <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "5%"}}>
                                 <button className="loginSubmit" onClick={this.addMovie}>Add Movie</button>
                             </div>
@@ -265,7 +313,7 @@ export default class AdminHome extends Component{
                             <div className="adminHomeButton" onClick={() => {this.getAllCritics();this.toggleRemoveCriticDialog()}}>Remove Critic</div>
                         </div>
                         <div className="adminHomeContent">
-                            <div className="adminHomeButton" onClick={this.toggleAddMovieDialog}>Add Movie</div>
+                            <div className="adminHomeButton" onClick={() => {this.getAllGenres();this.toggleAddMovieDialog()}}>Add Movie</div>
                         </div>
                     </div>
                 </div>

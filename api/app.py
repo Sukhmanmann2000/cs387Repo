@@ -121,6 +121,7 @@ def getMovieList():
             movieEntry['title'] = f"Movie {i}"
             movieEntry['year'] = i+1990
             movieEntry['rating'] = round(2+3*np.random.rand(),2)
+            movieEntry['duration'] = 120
             movieEntry['genre'] = ", ".join(genres)
             movieEntry['genreList'] = genres
             movieEntry['actors'] = ", ".join(actors)
@@ -135,6 +136,35 @@ def getMovieList():
             movieEntry['reviews'] = reviews
             movieEntry['numUsers'] = 100000
         return {'movieList': movieList}
+
+@app.route('/getWatchHistory',methods=['GET'])
+@login_required
+def getWatchHistory():
+    if current_user.is_authenticated:
+        actors = ['Actor1','Actor2','Actor3']
+        genres = ['Action', 'Horror', 'Thriller']
+        movieList = []
+        for i in range(12):
+            movieEntry = {}
+            movieEntry['id'] = i
+            movieEntry['title'] = f"Movie {i}"
+            movieEntry['year'] = i+1990
+            movieEntry['rating'] = round(2+3*np.random.rand(),2)
+            movieEntry['duration'] = 120
+            movieEntry['genre'] = ", ".join(genres)
+            movieEntry['genreList'] = genres
+            movieEntry['actors'] = ", ".join(actors)
+            movieEntry['director'] = 'Christopher Nolan'
+            movieList.append(movieEntry)
+            reviews = []
+            for i in range(3):
+                reviewDic = {}
+                reviewDic['reviewedBy'] = f"Critic {i+1}"
+                reviewDic['content'] = f"Review {i+1}"
+                reviews.append(reviewDic)
+            movieEntry['reviews'] = reviews
+            movieEntry['numUsers'] = 100000
+        return {'watchHistory': movieList}
 
 @app.route('/getFriendRecommendations',methods=['GET'])
 @login_required
@@ -154,6 +184,7 @@ def getFriendRecommendations():
                 movieId+=1
                 movieEntry['year'] = j+2000
                 movieEntry['rating'] = round(2+3*np.random.rand(),2)
+                movieEntry['duration'] = 120
                 movieEntry['genre'] = ", ".join([f"Genre{k}" for k in range(3)])
                 movieEntry['genreList'] = [f"Genre{k}" for k in range(3)]
                 movieEntry['actors'] = ", ".join([f"Actor{k}" for k in range(3)])
@@ -175,7 +206,7 @@ def getFriendRecommendations():
 def getFriendList():
     if current_user.is_authenticated:
         try:
-            friendList = [{"name":f"Friend {i}","id":i} for i in range(1,11)]
+            friendList = [{"username":f"Friend {i}"} for i in range(1,16)]
             return {"friendList": friendList, "error":"NA"}
         except Exception as e:
             return {"friendList":[], "error": "Unknown Error"}
@@ -222,6 +253,17 @@ def getAllUsers():
     if current_user.is_authenticated:
         reqList = [{"username":f"User{i}","id":i, "likedGenres": "Genre1, Genre2, Genre3"} for i in range(1,51)]
         return {"userList": reqList}
+
+@app.route('/removeFriend', methods=['POST'])
+@login_required
+def removeFriend():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            username = data['username'].strip()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
 
 @app.route('/sendRequestToUser', methods=['POST'])
 @login_required
