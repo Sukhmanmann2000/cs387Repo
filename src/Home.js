@@ -48,11 +48,14 @@ export default class Home extends Component{
         this.getAllGenres = this.getAllGenres.bind(this);
         this.getAllFriends = this.getAllFriends.bind(this);
         this.getWatchHistory = this.getWatchHistory.bind(this);
+        this.getAllFriendRequests = this.getAllFriendRequests.bind(this);
 
         this.logoutUser = this.logoutUser.bind(this);
         this.removeFriend = this.removeFriend.bind(this);
         this.saveGenres = this.saveGenres.bind(this);
         this.sendRequestToUser = this.sendRequestToUser.bind(this);
+        this.acceptFriendRequest = this.acceptFriendRequest.bind(this);
+        this.deleteFriendRequest = this.deleteFriendRequest.bind(this);
     }
     componentDidMount(){
         fetch('/getUserDetails').then(res => res.json()).then(data => {
@@ -71,6 +74,9 @@ export default class Home extends Component{
         fetch('/getFriendRecommendations').then(res => res.json()).then(data => {
             this.setState({friendRecs: data.friendRecs});
         });
+        this.getAllFriendRequests();
+    }
+    getAllFriendRequests(){
         fetch('/getFriendRequests').then(res => res.json()).then(data => {
             this.setState({requestQueue: data.requestQueue})
             // console.log(data.requestQueue);
@@ -102,12 +108,18 @@ export default class Home extends Component{
     getAllGenres(){
         fetch('/getAllGenres').then(res => res.json()).then(data => {
             this.setState({genreList: data.genreList});
-            var tempDic = {};
+            var tempDic = {}
             for (let x of data.genreList){
-                tempDic[x.genre_id] = false;
+                tempDic[x.name] = false;
             }
+            fetch('/getLikedGenres').then(res => res.json()).then(data => {
+                for (let x of data.likedGenres){
+                    tempDic[x] = true;
+                }
+                this.setState({likedGenres: tempDic });
+            })
             // console.log(tempDic);
-            this.setState({likedGenres: tempDic});
+            // this.setState({likedGenres: tempDic});
         });
     }
     getAllUsers(){
@@ -127,20 +139,31 @@ export default class Home extends Component{
     }
     handleGenreSelect(e){
         var tempDic = this.state.likedGenres;
-        tempDic[e.genre_id] = !tempDic[e.genre_id];
+        tempDic[e.name] = !tempDic[e.name];
         this.setState({likedGenres: tempDic, selectGenreDialogError: ""});
     }
     saveGenres(){
         let selected = false;
+        var liked = []
         for (let key in this.state.likedGenres){
             if (this.state.likedGenres[key]){
-                selected = true;
-                break;
+                liked.push(key)
             }
         }
-        if (selected){
+        if (liked.length!=0){
             this.setState({selectGenreDialogError: ""});
-            this.toggleProfileDialog();
+            axios.post('/saveGenres',{likedGenres: liked})
+                    .then(res => {
+                    let data = res.data;
+                    if (data.success){
+                        alert("Genres saved successfully")
+                        this.toggleProfileDialog();
+                    } else {
+                        this.setState({selectGenreDialogError: data.error});
+                    }
+                    }, (error) => {
+                        console.log(error);
+                    })
         }
         else
             this.setState({selectGenreDialogError: "Please select atleast 1 Genre"});
@@ -178,6 +201,7 @@ export default class Home extends Component{
             let data = res.data;
             if (data.success){
                 alert("Removed " + username + " from Friends successfully");
+                this.getAllFriends()
             }
             else
                 alert(data.error);
@@ -186,6 +210,40 @@ export default class Home extends Component{
             });
         }
     } 
+    acceptFriendRequest(username){
+        var confirmation = window.confirm("Accept request from "+username+"?");
+        if (confirmation){
+            axios.post('/addFriend',{username: username})
+            .then(res => {
+            let data = res.data;
+            if (data.success){
+                alert("Accpeted request from " + username + " successfully");
+                this.getAllFriendRequests();
+            }
+            else
+                alert(data.error);
+            }, (error) => {
+                console.log(error);
+            });
+        }
+    }
+    deleteFriendRequest(username){
+        var confirmation = window.confirm("Delete request from "+username+"?");
+        if (confirmation){
+            axios.post('/deleteFriendRequest',{username: username})
+            .then(res => {
+            let data = res.data;
+            if (data.success){
+                alert("Deleted request from " + username + " successfully");
+                this.getAllFriendRequests();
+            }
+            else
+                alert(data.error);
+            }, (error) => {
+                console.log(error);
+            });
+        }
+    }
     render() {
         if (!this.state.isUserLoggedIn)
             return (<div></div>)
@@ -210,9 +268,9 @@ export default class Home extends Component{
                                 {this.state.genreList.map((e,id) => {return (
                                     <div className="genreElement" 
                                     onClick={() => {this.handleGenreSelect(e)}} 
-                                    style={this.state.likedGenres[e.genre_id]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
+                                    style={this.state.likedGenres[e.name]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
                                     >
-                                        {e.genre}
+                                        {e.name}
                                     </div>   
                                 )})}
                             </div>
@@ -375,8 +433,8 @@ export default class Home extends Component{
                                                         <div style={{fontSize: '17px'}}>{e.username}</div>
                                                         <div style={{fontSize: '12px'}}><b style={{fontWeight: "600"}}>Likes:</b> {e.likedGenres}</div>
                                                     </div>
-                                                    <div style={{width:"10%",textAlign: "center"}}><CheckCircleRoundedIcon style={{color: "#33CC00", cursor: "pointer"}}/></div>
-                                                    <div style={{width:"10%",textAlign: "center"}}><CancelRoundedIcon style={{color: "red", cursor: "pointer"}}/></div>
+                                                    <div style={{width:"10%",textAlign: "center"}}><CheckCircleRoundedIcon onClick={() =>{this.acceptFriendRequest(e.username)}} style={{color: "#33CC00", cursor: "pointer"}}/></div>
+                                                    <div style={{width:"10%",textAlign: "center"}}><CancelRoundedIcon onClick={() =>{this.deleteFriendRequest(e.username)}} style={{color: "red", cursor: "pointer"}}/></div>
                                                 </div>
                                             </div>
                                         )})}

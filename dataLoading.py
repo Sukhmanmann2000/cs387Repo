@@ -114,7 +114,40 @@ for x in range(len(movies)):
         statement = f'MATCH (a:Movies),(b:Celebrity) where a.movie_id = {movie_id} and b.name = "{director_name}" CREATE (b)-[r:directed]->(a) return r;\n'
         f.write(statement)
     
+# Constraints on Users
 
+statement = "CREATE CONSTRAINT user_key ON (x:User) ASSERT (x.username) IS NODE KEY;\n" 
+f.write(statement)
 
+statement = "CREATE CONSTRAINT user_name_notnull ON (p:User) ASSERT exists(p.name);\n"
+f.write(statement)
+
+# Constraints on Critics
+
+statement = "CREATE CONSTRAINT critic_key ON (x:Critic) ASSERT (x.username) IS NODE KEY;\n" 
+f.write(statement)
+
+statement = "CREATE CONSTRAINT critic_name_notnull ON (p:Critic) ASSERT exists(p.name);\n"
+f.write(statement)
+
+# Constraints on Admin
+
+statement = "CREATE CONSTRAINT admin_key ON (x:Admin) ASSERT (x.username) IS NODE KEY;\n" 
+f.write(statement)
+
+statement = "CREATE CONSTRAINT admin_name_notnull ON (p:Admin) ASSERT exists(p.name);\n"
+f.write(statement)
+
+# Initialize all relationships
+f.write("CREATE ()-[:friend]->();\n")
+f.write("CREATE ()-[:request]->();\n")
+f.write("CREATE ()-[:likedGenre]->();\n")
+f.write("CREATE ()-[:favorite]->();\n")
+f.write("CREATE ()-[:rated]->();\n")
+f.write("CREATE ()-[:recommended]->();\n")
+f.write("CREATE ()-[:review]->();\n")
+f.write("CREATE ()-[:recommending_user]->();\n")
+f.write("CREATE ()-[:to_whom_recommended]->();\n")
+f.write("CREATE ()-[:movie_recommended]->();\n")
 
 

@@ -91,7 +91,24 @@ export default class MoviePage extends Component{
         this.setState({selectedGenres: tempDic});
     }
     recommendFriends(){
-        this.toggleDialog();
+        var friendList = []
+        for (let key in this.state.selectedFriends){
+            if(this.state.selectedFriends[key]){
+                friendList.push(key)
+            }
+        }
+        axios.post('/recommendFriends',{friendList: friendList,movie_id: this.state.movieDic.id})
+        .then(res => {
+        let data = res.data;
+        if (data.success){
+            alert("Recommendations sent successfully")
+            this.toggleDialog()
+        } else {
+            alert(data.error)
+        }
+        }, (error) => {
+            console.log(error);
+        })
     }
     render(){
         if (!this.state.movieDic){
