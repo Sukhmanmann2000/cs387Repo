@@ -28,7 +28,7 @@ class MovieCard extends Component{
                     <div className="movieTitle">
                         {movieDic.title} ({movieDic.year})
                     </div>
-                    <div style={{width: "20%",display: "flex",alignItems: "center", marginTop: "1%"}}>
+                    <div style={{width: "15%",display: "flex",alignItems: "center", marginTop: "1%"}}>
                         <img style={{width: "25px"}} src={star}></img>
                         <div style={{marginLeft: "10px",marginTop: "2px"}}>{movieDic.rating}/5</div>
                     </div>

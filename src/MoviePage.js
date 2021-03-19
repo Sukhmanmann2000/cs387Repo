@@ -10,12 +10,15 @@ export default class MoviePage extends Component{
         super(props);
         this.state = {
             movieDic: props.location.state ? props.location.state.movieDic : null,
+            isCritic: "NA",
             userRating: 0,
             errorMessage: "",
             friendList: [],
             selectedFriends: {},
             dialogOpen: false,
-            searchText: ""
+            searchText: "",
+            genreList: [],
+            selectedGenres: {}
         }
         this.logoutUser = this.logoutUser.bind(this);
         this.getFriendList = this.getFriendList.bind(this);
@@ -23,11 +26,20 @@ export default class MoviePage extends Component{
         this.handleSearchChange = this.handleSearchChange.bind(this);
         this.handleCheckBox = this.handleCheckBox.bind(this);
         this.recommendFriends = this.recommendFriends.bind(this);
+        this.getAllGenres = this.getAllGenres.bind(this);
+        this.handleGenreSelect = this.handleGenreSelect.bind(this);
     }
     componentDidMount(){
         fetch('/checkUserLoggedIn').then(res => res.json()).then(data => {
             if (!data.isUserLoggedIn)
                 window.location.href = "/login";
+            else if (data.isAdmin)
+                window.location.href = "/adminHome"
+            else{
+                this.setState({isCritic: data.isCritic});
+                if (data.isCritic)
+                    this.getAllGenres();
+            }
         });
     }
     logoutUser(){
@@ -41,13 +53,23 @@ export default class MoviePage extends Component{
             console.log(error);
         })
     }
+    getAllGenres(){
+        fetch('/getAllGenres').then(res => res.json()).then(data => {
+            this.setState({genreList: data.genreList});
+            var tempDic = {};
+            for (let x of data.genreList){
+                tempDic[x.genre_id] = false;
+            }
+            this.setState({selectedGenres: tempDic});
+        });
+    }
     getFriendList(){
         fetch('/getFriendList').then(res => res.json()).then(data => {
             this.setState({friendList: data.friendList});
             let tempDic = {};
             for (let idx in data.friendList){
                 let item = data.friendList[idx];
-                tempDic[item.id] = false;
+                tempDic[item.username] = false;
             }
             this.setState({selectedFriends: tempDic});
         });
@@ -62,6 +84,11 @@ export default class MoviePage extends Component{
         let tempDic = this.state.selectedFriends;
         tempDic[ce.target.name] = !tempDic[ce.target.name];
         this.setState({selectedFriends: tempDic});
+    }
+    handleGenreSelect(e){
+        var tempDic = this.state.selectedGenres;
+        tempDic[e.genre_id] = !tempDic[e.genre_id];
+        this.setState({selectedGenres: tempDic});
     }
     recommendFriends(){
         this.toggleDialog();
@@ -81,11 +108,11 @@ export default class MoviePage extends Component{
                         <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", display: "flex",justifyContent: "center"}}>
                             <div className="dialogFriendList">
                                 {this.state.friendList.map((e,lid)=>{
-                                if (e.name.toLowerCase().includes(this.state.searchText.toLowerCase()))
+                                if (e.username.toLowerCase().includes(this.state.searchText.toLowerCase()))
                                     return (
                                     <div style={{width: "95%",display: "flex",flexDirection: "row", padding: "3px 0px"}}>
-                                        <input name={e.id} style={{marginTop: "7px", width: "15px"}} checked={this.state.selectedFriends[e.id]} type="checkbox" onChange={this.handleCheckBox}></input>
-                                        <div style={{marginLeft: "5px",fontSize: "18px"}}>{e.name}</div>
+                                        <input name={e.username} style={{marginTop: "7px", width: "15px"}} checked={this.state.selectedFriends[e.username]} type="checkbox" onChange={this.handleCheckBox}></input>
+                                        <div style={{marginLeft: "5px",fontSize: "18px"}}>{e.username}</div>
                                     </div>
                                 )})}
                             </div>
@@ -125,11 +152,14 @@ export default class MoviePage extends Component{
                     </div>
                     <div style={{width: "100%",display: 'flex',flexDirection: 'row'}}>
                         <div style={{width: "80%"}}>
+                            <div className="moviePageInfo"><b>Duration: </b>{this.state.movieDic.duration} mins</div>
                             <div className="moviePageInfo"><b>Director: </b>{this.state.movieDic.director}</div>
                             <div className="moviePageInfo"><b>Actors: </b>{this.state.movieDic.actors}</div>
                         </div>
                         <div style={{width: "20%",display: "flex",alignItems:"center",justifyContent: "left"}}>
+                            {!this.state.isCritic ? 
                             <div className="moviePageLogoutButton" onClick={() => {this.getFriendList();this.toggleDialog()}}>Recommend To Friends</div>
+                            : null}
                         </div>
                     </div>
                     <div style={{marginTop: "8px",display: "flex",flexDirection: "row"}}>
@@ -144,7 +174,7 @@ export default class MoviePage extends Component{
                             />
                         </div>
                     </div>
-                    {this.state.movieDic.reviews && this.state.movieDic.reviews.length>0? 
+                    {this.state.isCritic!="NA" && !this.state.isCritic && this.state.movieDic.reviews && this.state.movieDic.reviews.length>0? 
                     <div>
                         <div className="moviePageCriticReviewHeader">Critic Reviews</div>
                         <div style={{width: "95%"}}>
@@ -155,6 +185,27 @@ export default class MoviePage extends Component{
                                 </div>
                             )})}
                         </div>
+                    </div> : null}
+                    {this.state.isCritic!="NA" && this.state.isCritic ? 
+                    <div>
+                        <div className="moviePageCriticReviewHeader">Select Genres</div>
+                        <div className="moviePageSelectGenreDiv">
+                            {this.state.genreList.map((e,id) => {return (
+                                <div className="addMovieGenreElement" 
+                                onClick={() => {this.handleGenreSelect(e)}} 
+                                style={this.state.selectedGenres[e.genre_id]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
+                                >
+                                    {e.genre}
+                                </div>   
+                            )})}
+                        </div>
+                        <div className="moviePageCriticReviewHeader">Add Review</div>
+                        <div style={{width: "95%"}}>
+                            <textarea className="addReviewArea"></textarea>
+                        </div>
+                        <div style={{width: "10%",marginTop: "0.6%"}}>
+                            <div className="moviePageLogoutButton">Submit Review</div>
+                        </div>                       
                     </div> : null}
                 </div>
             </div>

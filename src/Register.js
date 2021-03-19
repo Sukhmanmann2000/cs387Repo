@@ -45,6 +45,10 @@ export default class Register extends Component {
         this.setState({errorMessage: "Please enter the required Details"});
         return;
     }
+    else if (this.state.username.includes(" ")){
+        this.setState({errorMessage: "Username must not have spaces"});
+        return;
+    }
     else if (this.state.password.length < 5){
         this.setState({errorMessage: "Password must be atleast 5 characters long"});
         return;

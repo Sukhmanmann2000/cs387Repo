@@ -27,7 +27,7 @@ class FriendMovieCard extends Component{
                     <div className="friendmovieTitle">
                         {movieDic.title} ({movieDic.year})
                     </div>
-                    <div style={{width: "20%",display: "flex",alignItems: "center", marginTop: "1%"}}>
+                    <div style={{width: "17%",display: "flex",alignItems: "center", marginTop: "1%"}}>
                         <img style={{width: "18px"}} src={star}></img>
                         <div style={{marginLeft: "7px",marginTop: "1px",fontSize: "13px"}}>{movieDic.rating}/5</div>
                     </div>
