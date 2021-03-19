@@ -1,3 +1,5 @@
+from os import stat
+from re import M
 import time, json
 from datetime import datetime as dts
 from flask import Flask, request, jsonify
@@ -38,7 +40,7 @@ login_manager = LoginManager()
 login_manager.login_view = '/login'
 login_manager.init_app(app)
 
-# graph = Graph(user="neo4j",password="werock1234")
+graph = Graph(name="recommendersystem",user="neo4j",password="werock1234")
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -86,6 +88,10 @@ def registerUser():
             newuser = User(username,generate_password_hash(password,method='sha256'),name,gender,dtsObj)
             db.session.add(newuser)
             db.session.commit()
+            tx = graph.begin()
+            statement = f'CREATE (a:User {{ username: "{username}", name: "{name}", gender: "{gender}", dob: "{dob}"}})'
+            tx.run(statement)
+            tx.commit()
             login_user(newuser, remember=True)
             return {'loggedIn': True, 'registererror': "NA"}
         except Exception as e:
@@ -112,30 +118,41 @@ def getUserDetails():
 @login_required
 def getMovieList():
     if current_user.is_authenticated:
-        actors = ['Actor1','Actor2','Actor3']
-        genres = ['Action', 'Horror', 'Thriller']
-        movieList = []
-        for i in range(12):
+        tx = graph.begin()
+        statement = f"MATCH (m:Movies) return m LIMIT 25;"
+        movieList = tx.run(statement).data()
+        ans = []
+        for x in movieList:
+            y = x['m']
             movieEntry = {}
-            movieEntry['id'] = i
-            movieEntry['title'] = f"Movie {i}"
-            movieEntry['year'] = i+1990
-            movieEntry['rating'] = round(2+3*np.random.rand(),2)
-            movieEntry['duration'] = 120
-            movieEntry['genre'] = ", ".join(genres)
-            movieEntry['genreList'] = genres
-            movieEntry['actors'] = ", ".join(actors)
-            movieEntry['director'] = 'Christopher Nolan'
-            movieList.append(movieEntry)
+            movieEntry['id'] = y['movie_id']
+            movieEntry['title'] = y['title']
+            movieEntry['year'] = y['year_released']
+            movieEntry['rating'] = y['avg_rating']
+            movieEntry['duration'] = y['duration']
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})-[:is_genre]->(g:Genres) return g;"
+            genres = tx.run(statement).data()
+            genreList = [g['g']['name'] for g in genres]
+            movieEntry['genre'] = ", ".join(genreList)
+            movieEntry['genreList'] = genreList
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:acted_in]-(g:Celebrity) return g;"
+            actors = tx.run(statement).data()            
+            movieEntry['actors'] = ", ".join([g['g']['name'] for g in actors])
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
+            director = tx.run(statement).data()  
+            movieEntry['director'] = director[0]['g']['name']
             reviews = []
-            for i in range(3):
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[r:review]-(g:Critic) return g,r.review_text;"
+            reviewtemp = tx.run(statement).data()
+            for i in reviewtemp:
                 reviewDic = {}
-                reviewDic['reviewedBy'] = f"Critic {i+1}"
-                reviewDic['content'] = f"Review {i+1}"
+                reviewDic['reviewedBy'] = i['g']['name']
+                reviewDic['content'] = i['r.review_text']
                 reviews.append(reviewDic)
             movieEntry['reviews'] = reviews
-            movieEntry['numUsers'] = 100000
-        return {'movieList': movieList}
+            movieEntry['numUsers'] = y['no_user_ratings']
+            ans.append(movieEntry)
+        return {'movieList': ans}
 
 @app.route('/getWatchHistory',methods=['GET'])
 @login_required
@@ -170,33 +187,46 @@ def getWatchHistory():
 @login_required
 def getFriendRecommendations():
     if current_user.is_authenticated:
-        friendList = [f"Friend {i}" for i in range(1,11)]
+        tx = graph.begin()
+        statement = f"MATCH (a:Recommendation {{friend2: '{current_user.username}'}})-[:recommending_user]->(b:User) return b;"
+        friendList = tx.run(statement).data()
         friendRecs = []
-        movieId = 1
-        for i in range(len(friendList)):
+        for friendTemp in friendList:
+            friend = friendTemp['b']
             friendEntry = {}
-            friendEntry["name"] = friendList[i]
+            friendEntry["name"] = friend['username']
+            statement = f"MATCH (a:Recommendation {{friend1: '{friend['username']}', friend2: '{current_user.username}'}})-[:movie_recommended]->(m:Movies) return m;"
+            movies = tx.run(statement).data()
             friendEntry["movies"] = []
-            for j in range(3):
+            for j in movies:
+                movie = j['m']
                 movieEntry = {}
-                movieEntry['id'] = movieId
-                movieEntry['title'] = f"Movie {movieId}"
-                movieId+=1
-                movieEntry['year'] = j+2000
-                movieEntry['rating'] = round(2+3*np.random.rand(),2)
-                movieEntry['duration'] = 120
-                movieEntry['genre'] = ", ".join([f"Genre{k}" for k in range(3)])
-                movieEntry['genreList'] = [f"Genre{k}" for k in range(3)]
-                movieEntry['actors'] = ", ".join([f"Actor{k}" for k in range(3)])
-                movieEntry['director'] = 'Christopher Nolan'
+                movieEntry['id'] = movie['movie_id']
+                movieEntry['title'] = movie['title']
+                movieEntry['year'] = movie['year_released']
+                movieEntry['rating'] = movie['avg_rating']
+                movieEntry['duration'] = movie['duration']
+                statement = f"MATCH (m:Movies {{movie_id: {movie['movie_id']}}})-[:is_genre]->(g:Genres) return g;"
+                genres = tx.run(statement).data()
+                genreList = [g['g']['name'] for g in genres]
+                movieEntry['genre'] = ", ".join(genreList)
+                movieEntry['genreList'] = genreList
+                statement = f"MATCH (m:Movies {{movie_id: {movie['movie_id']}}})<-[:acted_in]-(g:Celebrity) return g;"
+                actors = tx.run(statement).data()            
+                movieEntry['actors'] = ", ".join([g['g']['name'] for g in actors])
+                statement = f"MATCH (m:Movies {{movie_id: {movie['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
+                director = tx.run(statement).data()  
+                movieEntry['director'] = director[0]['g']['name']
                 reviews = []
-                for i in range(3):
+                statement = f"MATCH (m:Movies {{movie_id: {movie['movie_id']}}})<-[r:review]-(g:Critic) return g,r.review_text;"
+                reviewtemp = tx.run(statement).data()
+                for i in reviewtemp:
                     reviewDic = {}
-                    reviewDic['reviewedBy'] = f"Critic {i+1}"
-                    reviewDic['content'] = f"Review {i+1}"
+                    reviewDic['reviewedBy'] = i['g']['name']
+                    reviewDic['content'] = i['r.review_text']
                     reviews.append(reviewDic)
                 movieEntry['reviews'] = reviews
-                movieEntry['numUsers'] = 100000
+                movieEntry['numUsers'] = movie['no_user_ratings']
                 friendEntry["movies"].append(movieEntry)
             friendRecs.append(friendEntry)
         return {"friendRecs":friendRecs}
@@ -206,7 +236,10 @@ def getFriendRecommendations():
 def getFriendList():
     if current_user.is_authenticated:
         try:
-            friendList = [{"username":f"Friend {i}"} for i in range(1,16)]
+            tx=graph.begin()
+            statement = f"MATCH (p:User {{username: '{current_user.username}'}})-[:friend]-(q:User) return q"
+            friendList = tx.run(statement).data()
+            friendList = [x['q'] for x in friendList]
             return {"friendList": friendList, "error":"NA"}
         except Exception as e:
             return {"friendList":[], "error": "Unknown Error"}
@@ -215,43 +248,70 @@ def getFriendList():
 @login_required
 def getAllGenres():
     if current_user.is_authenticated:
-        genreList = [
-            {'genre_id':1, 'genre': 'Action'},
-            {'genre_id':2, 'genre': 'Adventure'},
-            {'genre_id':3, 'genre': 'Animation'},
-            {'genre_id':4, 'genre': "Children's"},
-            {'genre_id':5, 'genre': 'Comedy'},
-            {'genre_id':6, 'genre': 'Crime'},
-            {'genre_id':7, 'genre': 'Documentary'},
-            {'genre_id':8, 'genre': 'Drama'},
-            {'genre_id':9, 'genre': 'Fantasy'},
-            {'genre_id':10, 'genre': 'Film-Noir'},
-            {'genre_id':11, 'genre': 'Horror'},
-            {'genre_id':12, 'genre': 'Musical'},
-            {'genre_id':13, 'genre': 'Mystery'},
-            {'genre_id':14, 'genre': 'Romance'},
-            {'genre_id':15, 'genre': 'Sci-Fi'},
-            {'genre_id':16, 'genre': 'Thriller'},
-            {'genre_id':17, 'genre': 'War'},
-            {'genre_id':18, 'genre': 'Western'},
-        ]
+        tf = graph.begin()
+        statement = f"MATCH (p:Genres) return p"
+        x = tf.run(statement).data()
+        genreList = [i['p'] for i in x]
         r = lambda : np.random.randint(0,255)
         for x in genreList:
             x['color'] = '#%02X%02X%02X' % (r(),r(),r())
         return {'genreList': genreList}
 
+@app.route('/getLikedGenres',methods=['GET'])
+@login_required
+def getLikedGenres():
+    if current_user.is_authenticated:
+        tf = graph.begin()
+        statement = f"MATCH (p:User {{username: '{current_user.username}' }})-[:likedGenre]->(g:Genres) return g"
+        x = tf.run(statement).data()
+        liked = [i['g']['name'] for i in x]
+        return {'likedGenres': liked}
+
+@app.route('/saveGenres', methods=['POST'])
+@login_required
+def saveGenres():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            tx = graph.begin()
+            for x in data['likedGenres']:
+                statement = f"MATCH (a:User {{username: '{current_user.username}'}}),(b:Genres {{name: '{x}'}}) MERGE (a)-[r:likedGenre]->(b) RETURN r;"
+                tx.run(statement)
+            tx.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
 @app.route('/getFriendRequests',methods=['GET'])
 @login_required
 def getFriendRequests():
     if current_user.is_authenticated:
-        reqList = [{"username":f"User{i}","id":i, "likedGenres": "Genre1, Genre2, Genre3"} for i in range(1,16)]
+        tx = graph.begin()
+        statement = f"MATCH (p:User {{username: '{current_user.username}'}})<-[:request]-(q:User) return q"
+        reqList = tx.run(statement).data()
+        reqList = [x['q'] for x in reqList]
+        for x in reqList:
+            statement = f"MATCH (p:User {{username: '{x['username']}' }})-[:likedGenre]->(g:Genres) return g"
+            genresList = tx.run(statement).data()
+            genresList = [y['g']['name'] for y in genresList]
+            x['likedGenres'] = ", ".join(genresList)
+
         return {"requestQueue": reqList}
 
 @app.route('/getAllUsers',methods=['GET'])
 @login_required
 def getAllUsers():
     if current_user.is_authenticated:
-        reqList = [{"username":f"User{i}","id":i, "likedGenres": "Genre1, Genre2, Genre3"} for i in range(1,51)]
+        tx = graph.begin()
+        statement = f"MATCH (p:User {{ username: '{current_user.username}'}}),(q:User) where not ((p)-[:friend]-(q)) and q.username <> '{current_user.username}' return q;"
+        reqList = tx.run(statement).data()
+        reqList = [x['q'] for x in reqList]
+        for x in reqList:
+            statement = f"MATCH (p:User {{username: '{x['username']}' }})-[:likedGenre]->(g:Genres) return g"
+            genresList = tx.run(statement).data()
+            genresList = [y['g']['name'] for y in genresList]
+            x['likedGenres'] = ", ".join(genresList)
+
         return {"userList": reqList}
 
 @app.route('/removeFriend', methods=['POST'])
@@ -261,6 +321,10 @@ def removeFriend():
         try:
             data = json.loads(request.data)
             username = data['username'].strip()
+            tx=graph.begin()
+            statement = f"MATCH (p:User {{username: '{current_user.username}'}})-[r:friend]-(q:User {{username: '{username}'}}) delete r;"
+            tx.run(statement)
+            tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
@@ -272,6 +336,10 @@ def sendRequestToUser():
         try:
             data = json.loads(request.data)
             username = data['username'].strip()
+            tx = graph.begin()
+            statement = f"MATCH (p:User {{username: '{current_user.username}'}}),(q:User {{username: '{username}'}}) MERGE (p)-[r:request]->(q) return r;"
+            tx.run(statement)
+            tx.commit()
             return {'requestSent': True, 'error': "NA"}
         except Exception as e:
             return {'requestSent': False, 'error': "Unknown Error"}
@@ -323,7 +391,56 @@ def removeCritic():
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
-        
+
+@app.route('/addFriend', methods=['POST'])
+@login_required
+def addFriend():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            username = data['username'].strip()
+            tx = graph.begin()
+            statement = f"MATCH (p:User {{username: '{username}'}}),(q:User {{username: '{current_user.username}'}}) CREATE (p)-[r:friend]->(q) return r;"
+            tx.run(statement)
+            statement = f"MATCH (p:User {{username: '{username}'}})-[r:request]-(q:User {{username: '{current_user.username}'}}) DELETE r;"
+            tx.run(statement)
+            tx.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/deleteFriendRequest', methods=['POST'])
+@login_required
+def deleteFriendRequest():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            username = data['username'].strip()
+            tx = graph.begin()
+            statement = f"MATCH (p:User {{username: '{username}'}})-[r:request]->(q:User {{username: '{current_user.username}'}}) DELETE r;"
+            tx.run(statement)
+            tx.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/recommendFriends', methods=['POST'])
+@login_required
+def recommendFriends():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            tx = graph.begin()
+            movie_id = data['movie_id']
+            for x in data['friendList']:
+                statement = f"MERGE (a:Recommendation {{friend1: '{current_user.username}', friend2: '{x}'}})"
+                tx.run(statement)
+                statement = f"MATCH (a:User {{username: '{current_user.username}'}}),(b:Recommendation {{friend1: '{current_user.username}', friend2: '{x}'}}),(c:User {{username: '{x}'}}),(d:Movies {{movie_id: {movie_id}}}) MERGE (b)-[r:recommending_user]->(a) MERGE (b)-[q:to_whom_recommended]->(c) MERGE (b)-[p:movie_recommended]->(d) RETURN r;"
+                tx.run(statement)
+            tx.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
 
 # @app.route('/getRecommendations', methods=['GET'])
 # def getRecommendationsS1(user_id,threshold):
