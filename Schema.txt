@@ -1,0 +1,30 @@
+Each Node Explanation with its attributes
+
+Movies 
+    movie_id (primary key)
+    title   (not null)
+    url 
+    year_released
+    duration
+    avg_rating
+    no_user_ratings      (weight is 1)  
+    no_critics_ratings   (weight is 5)  (Default 0)
+
+Genres
+    name (primary key)
+
+is_genre
+    from Movies and Genres
+
+Celebrity
+    id   (primary key)
+    name (not null)
+    gender
+    dob
+
+acted_in
+    from celebrity to Movies (for actors)
+
+directed
+    from celebrity to Movies (for directors)
+
