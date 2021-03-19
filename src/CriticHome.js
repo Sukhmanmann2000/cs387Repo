@@ -21,12 +21,17 @@ export default class CriticHome extends Component{
             movieURL: "",
             movieRating: "",
             movieDuration: "",
+            movieDirector: "",
+            movieActor: "",
+            movieActorList: [],
             searchOption: "Title",
             addMovieErrorMessage: ""
         }
         this.logoutUser = this.logoutUser.bind(this);
         this.handleGenreSelect = this.handleGenreSelect.bind(this);
         this.handleSearchOptionChange = this.handleSearchOptionChange.bind(this);
+        this.addActor = this.addActor.bind(this);
+        this.addMovie = this.addMovie.bind(this);
     }
     componentDidMount(){
         fetch('/getUserDetails').then(res => res.json()).then(data => {
@@ -62,6 +67,24 @@ export default class CriticHome extends Component{
             console.log(error);
         })
     }
+    addActor(){
+        var actorList = this.state.movieActorList;
+        actorList.push(this.state.movieActor);
+        this.setState({movieActorList: actorList, movieActor: ""});
+    }
+    addMovie(){
+        this.setState({
+            movieTitle: "",
+            movieYear: "",
+            movieURL: "",
+            movieRating: "",
+            movieDuration: "",
+            movieDirector: "",
+            movieActor: "",
+            movieActorList: [],
+            selectedGenres: {}
+        })
+    }
     handleGenreSelect(e){
         var tempDic = this.state.selectedGenres;
         tempDic[e.genre_id] = !tempDic[e.genre_id];
@@ -88,64 +111,80 @@ export default class CriticHome extends Component{
                 </div>
                 <div className="bottomContainer">
                     <div className="criticHomeMoviesPanel">
-                        <div className="searchMovieDiv">
-                            <input className="criticHomeSearchMovie" placeholder={searchText} type="text"></input>
-                            <div className="criticHomeSearchMovieIcon">
-                                <img style={{width:"100%"}} src={search}></img>
+                        <div style={{width: "100%", height: "100%", display: "flex", flexDirection: "row"}}>
+                            <div style={{width: "80%", height: "100%"}}>
+                                <div className="searchMovieDiv">
+                                    <input className="criticHomeSearchMovie" placeholder={searchText} type="text"></input>
+                                    <div className="criticHomeSearchMovieIcon">
+                                        <img style={{width:"100%"}} src={search}></img>
+                                    </div>
+                                </div>
+                                <div className="recommendationHeader">
+                                    <div style={{backgroundColor: "white", padding: "10px", width: "100%", borderRadius: "6px", textAlign: "center"}}>All Movies&nbsp;&nbsp;</div>
+                                </div>
+                                <div style={{width: "100%", display: "flex", justifyContent: "center"}}>
+                                    <div className="criticHomeMovieListPanel">
+                                        {movieElement}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="recommendationHeader">
-                            <div style={{backgroundColor: "white", padding: "10px", width: "100%", borderRadius: "6px", textAlign: "center"}}>All Movies&nbsp;&nbsp;</div>
-                        </div>
-                        <div style={{width: "100%", display: "flex", justifyContent: "center"}}>
-                            <div className="criticHomeMovieListPanel">
-                                {movieElement}
+                            <div style={{width: "20%", height: "100%", display: "flex", alignItems: "center"}}>
+                                <div style={{width: '100%'}}>
+                                    <div className="searchOptionHeader">Search Option</div>
+                                    <div style={{width: "100%"}}>
+                                        <FormControl component="fieldset">
+                                            <RadioGroup row aria-label="position" name="position" defaultValue="right">
+                                                <div style={{width: "100%",display: "flex", justifyContent: "center"}}>
+                                                    <FormControlLabel
+                                                        checked={this.state.searchOption === "Title"}
+                                                        value="Title"
+                                                        control={<Radio color="primary" />}
+                                                        label="By Title"
+                                                        labelPlacement="right"
+                                                        onChange={this.handleSearchOptionChange}
+                                                    />
+                                                </div>
+                                                <div style={{width: "100%",display: "flex", justifyContent: "center"}}>
+                                                    <FormControlLabel
+                                                        checked={this.state.searchOption === "Actor"}
+                                                        value="Actor"
+                                                        control={<Radio color="primary" />}
+                                                        label="By Actor"
+                                                        labelPlacement="right"
+                                                        onChange={this.handleSearchOptionChange}
+                                                    />
+                                                </div>
+                                                <div style={{width: "100%",display: "flex", justifyContent: "center"}}>
+                                                    <FormControlLabel
+                                                        checked={this.state.searchOption === "Director"}
+                                                        value="Director"
+                                                        control={<Radio color="primary" />}
+                                                        label="By Director"
+                                                        labelPlacement="right"
+                                                        onChange={this.handleSearchOptionChange}
+                                                    />
+                                                </div>
+                                                <div style={{width: "100%",display: "flex", justifyContent: "center"}}>
+                                                    <FormControlLabel
+                                                        checked={this.state.searchOption === "Year"}
+                                                        value="Year"
+                                                        control={<Radio color="primary" />}
+                                                        label="By Year"
+                                                        labelPlacement="right"
+                                                        onChange={this.handleSearchOptionChange}
+                                                    />
+                                                </div>
+                                            </RadioGroup>
+                                        </FormControl>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div className="criticHomeAddMoviePanel">
                         <div style={{width: "100%"}}>
-                            <div className="searchOptionHeader">Search Option</div>
-                            <div style={{width: "100%", display: 'flex', justifyContent: "center"}}>
-                                <FormControl component="fieldset">
-                                    <RadioGroup row aria-label="position" name="position" defaultValue="top">
-                                        <FormControlLabel
-                                            checked={this.state.searchOption === "Title"}
-                                            value="Title"
-                                            control={<Radio color="primary" />}
-                                            label="By Title"
-                                            labelPlacement="top"
-                                            onChange={this.handleSearchOptionChange}
-                                        />
-                                        <FormControlLabel
-                                            checked={this.state.searchOption === "Actor"}
-                                            value="Actor"
-                                            control={<Radio color="primary" />}
-                                            label="By Actor"
-                                            labelPlacement="top"
-                                            onChange={this.handleSearchOptionChange}
-                                        />
-                                        <FormControlLabel
-                                            checked={this.state.searchOption === "Director"}
-                                            value="Director"
-                                            control={<Radio color="primary" />}
-                                            label="By Director"
-                                            labelPlacement="top"
-                                            onChange={this.handleSearchOptionChange}
-                                        />
-                                        <FormControlLabel
-                                            checked={this.state.searchOption === "Year"}
-                                            value="Year"
-                                            control={<Radio color="primary" />}
-                                            label="By Year"
-                                            labelPlacement="top"
-                                            onChange={this.handleSearchOptionChange}
-                                        />
-                                    </RadioGroup>
-                                </FormControl>
-                            </div>
-                            <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "2%"}}>
-                            <div className="criticHomeAddMovieDiv">
+                            <div style={{width: "100%", display: "flex", justifyContent: "center"}}>
+                            
                                 <div style={{width: "96%", padding: "2% 0%"}}>
                                     <div style={{width: "100%",textAlign: "center", fontSize: "25px", fontWeight: "bold", color: "orange"}}>
                                         Add Movie
@@ -157,10 +196,21 @@ export default class CriticHome extends Component{
                                         Title:
                                     </div>
                                     <input type="text" className="criticHomeAddMovieInput" placeholder="Enter Title" value={this.state.movieTitle} onChange={(e) => {this.setState({movieTitle: e.target.value})}}></input>
-                                    <div className="criticHomeAddMovieLabel">
-                                        Year Released:
+                                    <div style={{width: "97%", display: "flex", flexDirection: "row", justifyContent: "space-between",marginTop: "1%"}}>
+                                        <div style={{width: "49%"}}>
+                                            <div className="criticHomeAddMovieLabel">
+                                                Year Released:
+                                            </div>
+                                            <input type="number" step="1" className="criticHomeAddMovieInput" placeholder="Enter Year Released" value={this.state.movieYear} onChange={(e) => {this.setState({movieYear: e.target.value})}}></input>
+                                        </div>
+                                        <div style={{width: "49%"}}>
+                                            <div className="criticHomeAddMovieLabel">
+                                                Movie URL:
+                                            </div>
+                                            <input type="text" className="criticHomeAddMovieInput" placeholder="Enter Movie URL" value={this.state.movieURL} onChange={(e) => {this.setState({movieURL: e.target.value})}}></input>
+                                        </div>
                                     </div>
-                                    <input type="number" step="1" className="criticHomeAddMovieInput" placeholder="Enter Year Released" value={this.state.movieYear} onChange={(e) => {this.setState({movieYear: e.target.value})}}></input>
+                                    
                                     <div className="criticHomeAddMovieLabel">
                                         Select Genres:
                                     </div>
@@ -176,29 +226,49 @@ export default class CriticHome extends Component{
                                             )})}
                                         </div>
                                     </div>
-                                    <div className="criticHomeAddMovieLabel">
-                                        Movie URL:
-                                    </div>
-                                    <input type="text" className="criticHomeAddMovieInput" placeholder="Enter Movie URL" value={this.state.movieURL} onChange={(e) => {this.setState({movieURL: e.target.value})}}></input>
-                                    <div style={{width: "96%", display: "flex", flexDirection: "row", justifyContent: "space-between",marginTop: "1%"}}>
-                                        <div style={{width: "48%"}}>
+                                    
+                                    <div style={{width: "97%", display: "flex", flexDirection: "row", justifyContent: "space-between",marginTop: "1%"}}>
+                                        <div style={{width: "28%"}}>
                                             <div className="criticHomeAddMovieLabel">
                                                 Critic Rating:
                                             </div>
                                             <input type="number" step="0.01" placeholder="Enter Critic Rating" value={this.state.movieRating} onChange={(e) => {this.setState({movieRating: e.target.value})}} className="criticHomeAddMovieInput"></input>
                                         </div>
-                                        <div style={{width: "48%"}}>
+                                        <div style={{width: "33%"}}>
                                             <div className="criticHomeAddMovieLabel">
                                                 Duration (mins):
                                             </div>
                                             <input type="number" step="1" placeholder="Enter Movie Duration" value={this.state.movieDuration} onChange={(e) => {this.setState({movieDuration: e.target.value})}} className="criticHomeAddMovieInput"></input>
                                         </div>
+                                        <div style={{width: "33%"}}>
+                                            <div className="criticHomeAddMovieLabel">
+                                                Director:
+                                            </div>
+                                            <input type="text" placeholder="Enter Director Name" value={this.state.movieDirector} onChange={(e) => {this.setState({movieDirector: e.target.value})}} className="criticHomeAddMovieInput"></input>
+                                        </div>
+                                    </div>
+                                    {this.state.movieActorList.length > 0 ? 
+                                    <div style={{width: "100%", textAlign: "center", marginTop: "1%"}}>
+                                        <b style={{fontSize: "20px", fontWeight: "500", marginBottom: "1%"}}>Actor List</b>
+                                        {this.state.movieActorList.map((e,id) => {
+                                            return(
+                                                <div style={{width: "100%", textAlign: "center"}}>{e}</div>
+                                            )
+                                        })}
+                                    </div> : null}
+                                    <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "2%"}}>
+                                        <div style={{width: "55%"}}>
+                                            <input type="text" placeholder="Enter Actor Name" value={this.state.movieActor} onChange={(e) => {this.setState({movieActor: e.target.value})}} className="adminHomeDialogInput"></input>
+                                        </div>
+                                        <div style={{width: "30%", display: "flex", justifyContent: "center",alignItems: "center"}}>
+                                            <button className="adminHomeAddActor" onClick={this.addActor}>Add Actor</button>
+                                        </div>
                                     </div>
                                     <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "5%"}}>
-                                        <button className="loginSubmit">Add Movie</button>
+                                        <button className="adminHomeAddMovieSubmit" onClick={this.addMovie}>Add Movie</button>
                                     </div>
                                 </div>
-                            </div>
+                            
                             </div>
                         </div>
                     </div>
