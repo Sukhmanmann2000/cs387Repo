@@ -24,6 +24,7 @@ export default class CriticHome extends Component{
             movieDirector: "",
             movieActor: "",
             movieActorList: [],
+            criticHomeSearchText: "",
             searchOption: "Title",
             addMovieErrorMessage: ""
         }
@@ -32,6 +33,7 @@ export default class CriticHome extends Component{
         this.handleSearchOptionChange = this.handleSearchOptionChange.bind(this);
         this.addActor = this.addActor.bind(this);
         this.addMovie = this.addMovie.bind(this);
+        this.getMovieListCritic = this.getMovieListCritic.bind(this);
     }
     componentDidMount(){
         fetch('/getUserDetails').then(res => res.json()).then(data => {
@@ -48,13 +50,24 @@ export default class CriticHome extends Component{
             this.setState({genreList: data.genreList});
             var tempDic = {};
             for (let x of data.genreList){
-                tempDic[x.genre_id] = false;
+                tempDic[x.name] = false;
             }
             this.setState({selectedGenres: tempDic});
         });
-        fetch('/getMovieListCritic').then(res => res.json()).then(data => {
-            this.setState({movieList: data.movieList});
-        });
+        this.getMovieListCritic();
+    }
+    getMovieListCritic(){
+        axios.post('/getMovieListCritic',{searchText: this.state.criticHomeSearchText, searchOption: this.state.searchOption})
+        .then(res => {
+            let data = res.data;
+            if (data.success){
+                this.setState({movieList: data.movieList});
+            } else {
+                alert(data.error);
+            }
+        }, (error) => {
+            console.log(error);
+        })
     }
     logoutUser(){
         axios.post('/logoutUser',{})
@@ -73,21 +86,59 @@ export default class CriticHome extends Component{
         this.setState({movieActorList: actorList, movieActor: ""});
     }
     addMovie(){
-        this.setState({
-            movieTitle: "",
-            movieYear: "",
-            movieURL: "",
-            movieRating: "",
-            movieDuration: "",
-            movieDirector: "",
-            movieActor: "",
-            movieActorList: [],
-            selectedGenres: {}
+        if (!this.state.movieTitle ||
+            !this.state.movieYear ||
+            !this.state.movieDirector ||
+            !this.state.movieRating ||
+            this.state.movieActorList.length==0){
+                alert("Please Enter Correct Input");
+                return;
+            }
+        var tempList = [];
+        for (let key in this.state.selectedGenres){
+            if (this.state.selectedGenres[key])
+                tempList.push(key);
+        }
+        if (tempList.length==0){
+            alert("Please select atleast 1 Genre");
+            return;
+        }
+        axios.post('/addMovie',{
+            title: this.state.movieTitle,
+            year: this.state.movieYear,
+            url: this.state.movieURL,
+            rating: this.state.movieRating,
+            duration: this.state.movieDuration,
+            director: this.state.movieDirector,
+            actorList: this.state.movieActorList,
+            genreList: tempList
+        })
+        .then(res => {
+            let data = res.data;
+            if (data.success){
+                alert("Movie Added Successfully!");
+                this.setState({
+                    movieTitle: "",
+                    movieYear: "",
+                    movieURL: "",
+                    movieRating: "",
+                    movieDuration: "",
+                    movieDirector: "",
+                    movieActor: "",
+                    movieActorList: [],
+                    selectedGenres: {}
+                });
+            }
+            else{
+                alert(data.error)
+            }
+        }, (error) => {
+            console.log(error);
         })
     }
     handleGenreSelect(e){
         var tempDic = this.state.selectedGenres;
-        tempDic[e.genre_id] = !tempDic[e.genre_id];
+        tempDic[e.name] = !tempDic[e.name];
         this.setState({selectedGenres: tempDic});
     }
     handleSearchOptionChange(e){
@@ -114,9 +165,9 @@ export default class CriticHome extends Component{
                         <div style={{width: "100%", height: "100%", display: "flex", flexDirection: "row"}}>
                             <div style={{width: "80%", height: "100%"}}>
                                 <div className="searchMovieDiv">
-                                    <input className="criticHomeSearchMovie" placeholder={searchText} type="text"></input>
+                                    <input className="criticHomeSearchMovie" placeholder={searchText} type="text" onChange={(e) => {this.setState({criticHomeSearchText: e.target.value})}}></input>
                                     <div className="criticHomeSearchMovieIcon">
-                                        <img style={{width:"100%"}} src={search}></img>
+                                        <img style={{width:"100%"}} src={search} onClick={this.getMovieListCritic}></img>
                                     </div>
                                 </div>
                                 <div className="recommendationHeader">
@@ -223,9 +274,9 @@ export default class CriticHome extends Component{
                                             {this.state.genreList.map((e,id) => {return (
                                                 <div className="addMovieGenreElement" 
                                                 onClick={() => {this.handleGenreSelect(e)}} 
-                                                style={this.state.selectedGenres[e.genre_id]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
+                                                style={this.state.selectedGenres[e.name]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
                                                 >
-                                                    {e.genre}
+                                                    {e.name}
                                                 </div>   
                                             )})}
                                         </div>

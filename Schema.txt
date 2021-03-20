@@ -8,7 +8,7 @@ Movies
     duration
     avg_rating
     no_user_ratings      (weight is 1)  
-    no_critics_ratings   (weight is 5)  (Default 0)
+    no_critic_ratings   (weight is 5)  (Default 0)
 
 Genres
     name (primary key)

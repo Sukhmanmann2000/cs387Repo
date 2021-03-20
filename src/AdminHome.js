@@ -127,14 +127,15 @@ export default class AdminHome extends Component{
             this.setState({genreList: data.genreList});
             var tempDic = {};
             for (let x of data.genreList){
-                tempDic[x.genre_id] = false;
+                tempDic[x.name] = false;
             }
             this.setState({selectedGenres: tempDic});
+            console.log(tempDic);
         });
     }
     handleGenreSelect(e){
         var tempDic = this.state.selectedGenres;
-        tempDic[e.genre_id] = !tempDic[e.genre_id];
+        tempDic[e.name] = !tempDic[e.name];
         this.setState({selectedGenres: tempDic});
     }
     removeCritic(criticUsername){
@@ -158,7 +159,55 @@ export default class AdminHome extends Component{
         })
     }
     addMovie(){
-        this.toggleAddMovieDialog();
+        if (!this.state.movieTitle ||
+            !this.state.movieYear ||
+            !this.state.movieDirector ||
+            !this.state.movieRating ||
+            this.state.movieActorList.length==0){
+                alert("Please Enter Correct Input");
+                return;
+            }
+        var tempList = [];
+        for (let key in this.state.selectedGenres){
+            if (this.state.selectedGenres[key])
+                tempList.push(key);
+        }
+        if (tempList.length==0){
+            alert("Please select atleast 1 Genre");
+            return;
+        }
+        axios.post('/addMovie',{
+            title: this.state.movieTitle,
+            year: this.state.movieYear,
+            url: this.state.movieURL,
+            rating: this.state.movieRating,
+            duration: this.state.movieDuration,
+            director: this.state.movieDirector,
+            actorList: this.state.movieActorList,
+            genreList: tempList
+        })
+        .then(res => {
+            let data = res.data;
+            if (data.success){
+                alert("Movie Added Successfully!");
+                this.setState({
+                    movieTitle: "",
+                    movieYear: "",
+                    movieURL: "",
+                    movieRating: "",
+                    movieDuration: "",
+                    movieDirector: "",
+                    movieActor: "",
+                    movieActorList: [],
+                    selectedGenres: {}
+                });
+            }
+            else{
+                alert(data.error)
+            }
+        }, (error) => {
+            console.log(error);
+        })
     }
     addActor(){
         var actorList = this.state.movieActorList;
@@ -209,7 +258,7 @@ export default class AdminHome extends Component{
                             <Select styles={customSelectStyle} 
                                 options={[{value: 'Male', label: 'Male'},{value: 'Female', label: 'Female'}, {value: 'Other', label: 'Other'}]}
                                 label="Select Gender"
-                                value={this.state.criticGender}
+                                // value={this.state.criticGender}
                                 placeholder = "Select Gender"
                                 onChange = {(e) => {this.setState({criticGender: e.value})}}
                             />
@@ -284,9 +333,9 @@ export default class AdminHome extends Component{
                                     {this.state.genreList.map((e,id) => {return (
                                         <div className="addMovieGenreElement" 
                                         onClick={() => {this.handleGenreSelect(e)}} 
-                                        style={this.state.selectedGenres[e.genre_id]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
+                                        style={this.state.selectedGenres[e.name]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
                                         >
-                                            {e.genre}
+                                            {e.name}
                                         </div>   
                                     )})}
                                 </div>

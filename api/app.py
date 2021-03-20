@@ -1,3 +1,4 @@
+from logging import currentframe
 from os import stat
 from re import M
 import time, json
@@ -16,6 +17,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = '9OLWxND4o83j4K4iuopO'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+
+critic_weight=5.0
+offset = 100
+
 
 db = SQLAlchemy(app)
 class User(UserMixin, db.Model):
@@ -87,10 +92,10 @@ def registerUser():
                 return {'loggedIn': False, 'registererror': "Username already exists"}
             newuser = User(username,generate_password_hash(password,method='sha256'),name,gender,dtsObj)
             db.session.add(newuser)
-            db.session.commit()
             tx = graph.begin()
             statement = f'CREATE (a:User {{ username: "{username}", name: "{name}", gender: "{gender}", dob: "{dob}"}})'
             tx.run(statement)
+            db.session.commit()
             tx.commit()
             login_user(newuser, remember=True)
             return {'loggedIn': True, 'registererror': "NA"}
@@ -122,7 +127,45 @@ def getMovieList():
         searchText = data["searchText"].strip().lower()
         searchOption = data["searchOption"].strip()
         tx = graph.begin()
-        offset = 25
+        if(searchOption=="Title"):
+            statement = f"MATCH (m:Movies),(u:User {{username: '{current_user.username}'}}) where toLower(m.title) contains '{searchText}' and not ((m)<-[:rated]-(u)) OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u),(m)<--(b:Celebrity)<-[:favorite]-(u)  return m,(coalesce(count(b),0)+1)*(coalesce(count(g),0)+1)*(m.avg_rating) as score ORDER BY score DESC LIMIT {offset};"
+        elif(searchOption=="Actor"):
+            statement = f"MATCH (a:Celebrity)-[:acted_in]->(m:Movies),(u:User {{username: '{current_user.username}'}}) where toLower(a.name) and not ((m)<-[:rated]-(u)) contains '{searchText}' OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u),(m)<--(b:Celebrity)<-[:favorite]-(u) return m,(coalesce(count(b),0)+1)*(count(g)+1)*(m.avg_rating) as score ORDER BY score DESC LIMIT {offset}; "
+        elif(searchOption=="Director"):
+            statement = f"MATCH (a:Celebrity)-[:directed]->(m:Movies),(u:User {{username: '{current_user.username}'}}) where toLower(a.name) and not ((m)<-[:rated]-(u)) contains '{searchText}' OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u),(m)<--(b:Celebrity)<-[:favorite]-(u) return m,(coalesce(count(b),0)+1)*(count(g)+1)*(m.avg_rating) as score ORDER BY score DESC LIMIT {offset};"
+        elif(searchOption=="Year"):
+            statement = f"MATCH (m:Movies),(u:User {{username: '{current_user.username}'}}) where m.year_released = {searchText} and not ((m)<-[:rated]-(u)) OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u),(m)<--(b:Celebrity)<-[:favorite]-(u)  return m,(coalesce(count(b),0)+1)*(coalesce(count(g),0)+1)*(m.avg_rating) as score ORDER BY score DESC LIMIT {offset};"
+        movieList = tx.run(statement).data()
+        ans = []
+        for x in movieList:
+            y = x['m']
+            movieEntry = {}
+            movieEntry['id'] = y['movie_id']
+            movieEntry['title'] = y['title']
+            movieEntry['year'] = y['year_released']
+            movieEntry['rating'] = round(y['avg_rating'],2)
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})-[:is_genre]->(g:Genres) return g;"
+            genres = tx.run(statement).data()
+            genreList = [g['g']['name'] for g in genres]
+            movieEntry['genre'] = ", ".join(genreList)
+            movieEntry['genreList'] = genreList
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:acted_in]-(g:Celebrity) return g;"
+            actors = tx.run(statement).data()            
+            movieEntry['actors'] = [g['g']['name'] for g in actors]
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
+            director = tx.run(statement).data()  
+            movieEntry['director'] = director[0]['g']['name'] if (len(director)>0) else ""
+            ans.append(movieEntry)
+        return {'movieList': ans, 'success': True, 'error': "NA"}
+
+@app.route('/getMovieListCritic',methods=['POST'])
+@login_required
+def getMovieListCritic():
+    if current_user.is_authenticated:
+        data = json.loads(request.data)
+        searchText = data["searchText"].strip().lower()
+        searchOption = data["searchOption"].strip()
+        tx = graph.begin()
         if(searchOption=="Title"):
             statement = f"MATCH (m:Movies) where toLower(m.title) contains '{searchText}' return m LIMIT {offset};"
         elif(searchOption=="Actor"):
@@ -139,8 +182,7 @@ def getMovieList():
             movieEntry['id'] = y['movie_id']
             movieEntry['title'] = y['title']
             movieEntry['year'] = y['year_released']
-            movieEntry['rating'] = y['avg_rating']
-            movieEntry['duration'] = y['duration']
+            movieEntry['rating'] = round(y['avg_rating'],2)
             statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})-[:is_genre]->(g:Genres) return g;"
             genres = tx.run(statement).data()
             genreList = [g['g']['name'] for g in genres]
@@ -151,26 +193,16 @@ def getMovieList():
             movieEntry['actors'] = [g['g']['name'] for g in actors]
             statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
             director = tx.run(statement).data()  
-            movieEntry['director'] = director[0]['g']['name']
-            reviews = []
-            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[r:review]-(g:Critic) return g,r.review_text;"
-            reviewtemp = tx.run(statement).data()
-            for i in reviewtemp:
-                reviewDic = {}
-                reviewDic['reviewedBy'] = i['g']['name']
-                reviewDic['content'] = i['r.review_text']
-                reviews.append(reviewDic)
-            movieEntry['reviews'] = reviews
-            movieEntry['numUsers'] = y['no_user_ratings']
+            movieEntry['director'] = director[0]['g']['name'] if (len(director)>0) else ""
             ans.append(movieEntry)
         return {'movieList': ans, 'success': True, 'error': "NA"}
 
-@app.route('/getMovieListCritic',methods=['GET'])
+@app.route('/getWatchHistory',methods=['GET'])
 @login_required
-def getMovieListCritic():
+def getWatchHistory():
     if current_user.is_authenticated:
         tx = graph.begin()
-        statement = f"MATCH (m:Movies) return m LIMIT 25;"
+        statement = f"MATCH (p:User {{username: '{current_user.username}'}})-[:rated]->(m:Movies) return m;"
         movieList = tx.run(statement).data()
         ans = []
         for x in movieList:
@@ -179,8 +211,7 @@ def getMovieListCritic():
             movieEntry['id'] = y['movie_id']
             movieEntry['title'] = y['title']
             movieEntry['year'] = y['year_released']
-            movieEntry['rating'] = y['avg_rating']
-            movieEntry['duration'] = y['duration']
+            movieEntry['rating'] = round(y['avg_rating'],2)
             statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})-[:is_genre]->(g:Genres) return g;"
             genres = tx.run(statement).data()
             genreList = [g['g']['name'] for g in genres]
@@ -191,48 +222,9 @@ def getMovieListCritic():
             movieEntry['actors'] = [g['g']['name'] for g in actors]
             statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
             director = tx.run(statement).data()  
-            movieEntry['director'] = director[0]['g']['name']
-            reviews = []
-            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[r:review]-(g:Critic) return g,r.review_text;"
-            reviewtemp = tx.run(statement).data()
-            for i in reviewtemp:
-                reviewDic = {}
-                reviewDic['reviewedBy'] = i['g']['name']
-                reviewDic['content'] = i['r.review_text']
-                reviews.append(reviewDic)
-            movieEntry['reviews'] = reviews
-            movieEntry['numUsers'] = y['no_user_ratings']
+            movieEntry['director'] = director[0]['g']['name'] if (len(director)>0) else ""
             ans.append(movieEntry)
-        return {'movieList': ans}
-
-@app.route('/getWatchHistory',methods=['GET'])
-@login_required
-def getWatchHistory():
-    if current_user.is_authenticated:
-        actors = ['Actor1','Actor2','Actor3']
-        genres = ['Action', 'Horror', 'Thriller']
-        movieList = []
-        for i in range(12):
-            movieEntry = {}
-            movieEntry['id'] = i
-            movieEntry['title'] = f"Movie {i}"
-            movieEntry['year'] = i+1990
-            movieEntry['rating'] = round(2+3*np.random.rand(),2)
-            movieEntry['duration'] = 120
-            movieEntry['genre'] = ", ".join(genres)
-            movieEntry['genreList'] = genres
-            movieEntry['actors'] = ", ".join(actors)
-            movieEntry['director'] = 'Christopher Nolan'
-            movieList.append(movieEntry)
-            reviews = []
-            for i in range(3):
-                reviewDic = {}
-                reviewDic['reviewedBy'] = f"Critic {i+1}"
-                reviewDic['content'] = f"Review {i+1}"
-                reviews.append(reviewDic)
-            movieEntry['reviews'] = reviews
-            movieEntry['numUsers'] = 100000
-        return {'watchHistory': movieList}
+        return {'watchHistory': ans}
 
 @app.route('/getFriendRecommendations',methods=['GET'])
 @login_required
@@ -257,7 +249,7 @@ def getFriendRecommendations():
                 movieEntry['id'] = movie['movie_id']
                 movieEntry['title'] = movie['title']
                 movieEntry['year'] = movie['year_released']
-                movieEntry['rating'] = movie['avg_rating']
+                movieEntry['rating'] = round(movie['avg_rating'],2)
                 movieEntry['duration'] = movie['duration']
                 statement = f"MATCH (m:Movies {{movie_id: {movie['movie_id']}}})-[:is_genre]->(g:Genres) return g;"
                 genres = tx.run(statement).data()
@@ -269,7 +261,7 @@ def getFriendRecommendations():
                 movieEntry['actors'] = [g['g']['name'] for g in actors]
                 statement = f"MATCH (m:Movies {{movie_id: {movie['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
                 director = tx.run(statement).data()  
-                movieEntry['director'] = director[0]['g']['name']
+                movieEntry['director'] = director[0]['g']['name'] if (len(director)>0) else ""
                 reviews = []
                 statement = f"MATCH (m:Movies {{movie_id: {movie['movie_id']}}})<-[r:review]-(g:Critic) return g,r.review_text;"
                 reviewtemp = tx.run(statement).data()
@@ -416,7 +408,11 @@ def addCritic():
                 return {'success': False, 'error': "Username already exists"}
             newCritic = User(username,generate_password_hash(password,method='sha256'),name,gender,dtsObj,True)
             db.session.add(newCritic)
+            tx = graph.begin()
+            statement = f"MERGE (p:Critic {{username: '{username}',name: '{name}',gender: '{gender}',dob: '{dob}'}})"
+            tx.run(statement)
             db.session.commit()
+            tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
@@ -442,7 +438,17 @@ def removeCritic():
             elif not user.isCritic:
                 return {'success': False, 'error': "Given username is not a Critic"}
             db.session.delete(user)
+            tx = graph.begin()
+            statement = f"MATCH (p:Critic {{username: '{current_user.username}'}})-[r:review]->(m:Movies) return r,m.movie_id"
+            result = tx.run(statement).data()
+            for x in result:
+                oldRating = x['r']['rating']
+                statement = f"MATCH (m:Movies {{movie_id: {x['m.movie_id']}}}) SET m.avg_rating = 1.0*(m.avg_rating*(m.no_user_ratings+{critic_weight}*m.no_critic_ratings)- {critic_weight}*{oldRating})/(m.no_user_ratings+{critic_weight}*(m.no_critic_ratings-1)),m.no_critic_ratings = m.no_critic_ratings-1  return m"
+                tx.run(statement)
+            statement = f"MATCH (p:Critic {{username: '{username}'}}) detach delete p "
+            tx.run(statement)
             db.session.commit()
+            tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
@@ -503,7 +509,11 @@ def markFavouriteDirector():
     if request.method == 'POST':
         try:
             data = json.loads(request.data)
-            directorName = data['directorName']
+            directorName = data['directorName'].strip()
+            tx = graph.begin()
+            statement = f"MATCH (p:User {{username: '{current_user.username}'}}),(c:Celebrity {{name: '{directorName}'}}) MERGE (p)-[r:favorite]->(c) return r"
+            tx.run(statement)
+            tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
@@ -515,6 +525,12 @@ def markFavouriteActors():
         try:
             data = json.loads(request.data)
             actorList = data['actorList']
+            tx = graph.begin()
+            for x in actorList:
+                x = x.strip()
+                statement = f"MATCH (p:User {{username: '{current_user.username}'}}),(c:Celebrity {{name: '{x}'}}) MERGE (p)-[r:favorite]->(c) return r"
+                tx.run(statement)
+            tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
@@ -612,9 +628,207 @@ def rateMovie():
         try: 
             data = json.loads(request.data)
             rating = data['rating']
+            movie_id = data['movie_id']
+            tx = graph.begin()
+            if(current_user.isCritic):
+                statement = f"MATCH (p:Critic {{username: '{current_user.username}'}})-[r:review]->(m:Movies {{movie_id: {movie_id}}}) return r "
+                result = tx.run(statement).data()
+                exists = len(result)>0
+                if(exists):
+                    oldRating = result[0]['r']['rating']
+                    statement = f"MATCH (p:Critic {{username: '{current_user.username}'}})-[r:review]->(m:Movies {{movie_id: {movie_id}}}) SET r.rating = {rating} return r "
+                    tx.run(statement)
+                    statement = f"MATCH (m:Movies {{movie_id: {movie_id}}}) SET m.avg_rating = m.avg_rating- {critic_weight}*({oldRating}-{rating})/(m.no_user_ratings+{critic_weight}*m.no_critic_ratings) return m"
+                    tx.run(statement)
+                else:
+                    statement = f"MATCH (p:Critic {{username: '{current_user.username}'}}),(m:Movies {{movie_id: {movie_id}}}) MERGE (p)-[r:review {{rating: {rating} }}]->(m) return r "
+                    tx.run(statement)
+                    statement = f"MATCH (m:Movies {{movie_id: {movie_id}}}) SET m.avg_rating = 1.0*(m.avg_rating*(m.no_user_ratings+{critic_weight}*m.no_critic_ratings)+{critic_weight}*{rating})/({critic_weight}+ m.no_user_ratings+{critic_weight}*m.no_critic_ratings),m.no_critic_ratings = 1+m.no_critic_ratings return m"
+                    tx.run(statement)
+            else:
+                statement = f"MATCH (p:User {{username: '{current_user.username}'}})-[r:rated]->(m:Movies {{movie_id: {movie_id}}}) return r "
+                result = tx.run(statement).data()
+                exists = len(result)>0
+                if(exists):
+                    oldRating = result[0]['r']['rating']
+                    statement = f"MATCH (p:User {{username: '{current_user.username}'}})-[r:rated]->(m:Movies {{movie_id: {movie_id}}}) SET r.rating = {rating} return r "
+                    tx.run(statement)
+                    statement = f"MATCH (m:Movies {{movie_id: {movie_id}}}) SET m.avg_rating = m.avg_rating- 1.0*({oldRating}-{rating})/(m.no_user_ratings+{critic_weight}*m.no_critic_ratings) return m"
+                    tx.run(statement)
+                else:
+                    statement = f"MATCH (p:User {{username: '{current_user.username}'}}),(m:Movies {{movie_id: {movie_id}}}) MERGE (p)-[r:rated {{rating: {rating} }}]->(m) return r "
+                    tx.run(statement)
+                    statement = f"MATCH (m:Movies {{movie_id: {movie_id}}}) SET m.avg_rating = 1.0*(m.avg_rating*(m.no_user_ratings+{critic_weight}*m.no_critic_ratings)+{rating})/(1+ m.no_user_ratings+{critic_weight}*m.no_critic_ratings),m.no_user_ratings = 1+m.no_user_ratings  return m"
+                    tx.run(statement)
+            tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/getMovieRating',methods=['POST'])
+@login_required
+def getMovieRating():
+    if current_user.is_authenticated and request.method=='POST':
+        try:
+            data = json.loads(request.data)
+            movie_id = data['movie_id']
+            tx = graph.begin()
+            rating = 0
+            review_text = ""
+            if(current_user.isCritic):
+                statement = f"MATCH (p:Critic {{username: '{current_user.username}'}})-[r:review]->(m:Movies {{movie_id: {movie_id}}}) return r"
+                result = tx.run(statement).data()
+                rating = result[0]['r']['rating'] if len(result)>0 else 0
+                review_text = result[0]['r']['review_text'] if len(result)>0 else ""
+            else:
+                statement = f"MATCH (p:User {{username: '{current_user.username}'}})-[r:rated]->(m:Movies {{movie_id: {movie_id}}}) return r"
+                result = tx.run(statement).data()
+                rating = result[0]['r']['rating'] if len(result)>0 else 0
+            return {'rating': rating, 'review': review_text,'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'rating': 0,'review': "",'success': False, 'error': "Unknown Error1"}
+
+@app.route('/getMovieDetails',methods=['POST'])
+@login_required
+def getMovieDetails():
+    if current_user.is_authenticated and request.method=='POST':
+        try:
+            data = json.loads(request.data)
+            movie_id = data['movie_id']
+            tx = graph.begin()
+            statement = f"MATCH (m:Movies {{movie_id: {movie_id}}}) return m;"
+            x = tx.run(statement).data()
+            y = x[0]['m']
+            movieEntry = {}
+            movieEntry['id'] = y['movie_id']
+            movieEntry['title'] = y['title']
+            movieEntry['year'] = y['year_released']
+            movieEntry['rating'] = round(y['avg_rating'],2)
+            movieEntry['duration'] = y['duration']
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})-[:is_genre]->(g:Genres) return g;"
+            genres = tx.run(statement).data()
+            genreList = [g['g']['name'] for g in genres]
+            movieEntry['genre'] = ", ".join(genreList)
+            movieEntry['genreList'] = genreList
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:acted_in]-(g:Celebrity) return g;"
+            actors = tx.run(statement).data()            
+            movieEntry['actors'] = [g['g']['name'] for g in actors]
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
+            director = tx.run(statement).data()  
+            movieEntry['director'] = director[0]['g']['name'] if (len(director)>0) else ""
+            reviews = []
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[r:review]-(g:Critic) return g,r.review_text;"
+            reviewtemp = tx.run(statement).data()
+            for i in reviewtemp:
+                reviewDic = {}
+                reviewDic['reviewedBy'] = i['g']['name']
+                reviewDic['content'] = i['r.review_text']
+                reviews.append(reviewDic)
+            movieEntry['reviews'] = reviews
+            movieEntry['numUsers'] = y['no_user_ratings']
+            return {'movieDic': movieEntry,'success': True,'error': "NA"}
+        except Exception as e:
+            return {'movieDic': {},'success': False, 'error': "Unknown Error2"}
+
+@app.route('/addMovie', methods=['POST'])
+@login_required
+def addMovie():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            title = data['title'].strip()
+            year_released = data['year']
+            url = data['url'].strip()
+            rating = float(data['rating'])
+            duration = data['duration']
+            directorName = data['director'].strip()
+            actorList = data['actorList']
+            genreList = data['genreList']
+            tx = graph.begin()
+            statement = f"MATCH (m:Movies) return max(m.movie_id) as mid"
+            movie_id = tx.run(statement).data()
+            movie_id = movie_id[0]['mid']+1
+            statement = f"MERGE (m:Movies {{movie_id: {movie_id},title: '{title}',year_released: {year_released},url: '{url}',avg_rating: {rating},no_user_ratings: 0,no_critic_ratings: 1,duration: {duration}}})"
+            tx.run(statement)
+            if(current_user.isCritic):
+                statement = f"MATCH (c:Critic {{username: '{current_user.username}'}}),(m:Movies {{movie_id: {movie_id}}}) MERGE (c)-[r:review {{rating: {rating}}}]->(m) return r"
+                tx.run(statement)
+            statement = f"MATCH (c:Celebrity {{name: '{directorName}'}}) return c"
+            results = tx.run(statement).data()
+            if len(results)==0:
+                statement = f"MATCH (c:Celebrity) return max(c.id) as id"
+                id = tx.run(statement).data()
+                id = id[0]['id']+1
+                statement = f"MERGE (c:Celebrity {{id: {id},name: '{directorName}', gender: 'Null', dob: 'Null'}})"    
+                tx.run(statement)
+            statement = f"MATCH (c:Celebrity {{name: '{directorName}'}}), (m:Movies {{movie_id: {movie_id}}}) MERGE (c)-[r:directed]->(m) return r"
+            tx.run(statement)
+            
+            for actorName in actorList:
+                actorName = actorName.strip()
+                statement = f"MATCH (c:Celebrity {{name: '{actorName}'}}) return c"
+                results = tx.run(statement).data()
+                if len(results)==0:
+                    statement = f"MATCH (c:Celebrity) return max(c.id) as id"
+                    id = tx.run(statement).data()
+                    id = id[0]['id']+1
+                    statement = f"MERGE (c:Celebrity {{id: {id},name: '{actorName}', gender: 'Null', dob: 'Null'}})"    
+                    tx.run(statement)
+                statement = f"MATCH (c:Celebrity {{name: '{actorName}'}}), (m:Movies {{movie_id: {movie_id}}}) MERGE (c)-[r:acted_in]->(m) return r"
+                tx.run(statement)
+
+            for name in genreList:
+                name = name.strip()
+                statement = f"MATCH (c:Genres {{name: '{name}'}}), (m:Movies {{movie_id: {movie_id}}}) MERGE (c)<-[r:is_genre]-(m) return r"
+                tx.run(statement)
+
+            tx.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/modifyGenres',methods=['POST'])
+@login_required
+def modifyGenres():
+    if current_user.is_authenticated and request.method=='POST':
+        try:
+            data = json.loads(request.data)
+            movie_id = data['movie_id']
+            genreList = data['genreList']
+            tx =graph.begin()
+            statement = f"MATCH (m:Movies {{movie_id: {movie_id}}})-[r:is_genre]->(g:Genres) delete r"
+            tx.run(statement)
+            for genre in genreList:
+                genre = genre.strip()
+                statement = f"MATCH (m:Movies {{movie_id: {movie_id}}}),(g:Genres {{name: '{genre}'}}) MERGE (m)-[r:is_genre]->(g) return r"
+                tx.run(statement)
+            tx.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/addReview',methods=['POST'])
+@login_required
+def addReview():
+    if current_user.is_authenticated and request.method=='POST':
+        try:
+            data = json.loads(request.data)
+            movie_id = data['movie_id']
+            review_text = data['reviewText']
+            tx =graph.begin()
+            statement = f"MATCH (m:Movies {{movie_id: {movie_id}}})<-[r:review]-(g:Critic {{username: '{current_user.username}'}}) return count(r)"
+            result = tx.run(statement).data()
+            result = result[0]['count(r)']
+            if(result>0):
+                statement = f"MATCH (m:Movies {{movie_id: {movie_id}}})<-[r:review]-(g:Critic {{username: '{current_user.username}'}}) SET r.review_text = '{review_text}' return r"
+            else:
+                statement = f"MATCH (m:Movies {{movie_id: {movie_id}}}),(g:Critic {{username: '{current_user.username}'}}) MERGE (m)<-[r:review {{rating: 0,review_text: '{review_text}'}}]-(g) return r"
+            tx.run(statement)
+            tx.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
 # @app.route('/getRecommendations', methods=['GET'])
 # def getRecommendationsS1(user_id,threshold):
 #     # In Strategy 1, the similarity between two users u1 and u2 is the proportion of movies they have in common
