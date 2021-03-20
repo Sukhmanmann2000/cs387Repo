@@ -52,7 +52,7 @@ export default class CriticHome extends Component{
             }
             this.setState({selectedGenres: tempDic});
         });
-        fetch('/getMovieList').then(res => res.json()).then(data => {
+        fetch('/getMovieListCritic').then(res => res.json()).then(data => {
             this.setState({movieList: data.movieList});
         });
     }

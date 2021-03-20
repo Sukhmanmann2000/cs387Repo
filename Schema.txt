@@ -76,11 +76,21 @@ Recommendation   (friend1 recommended friend2)
     friend1
     friend2 
 
+likedRecommendation (friend1 liked friend2's recommendation)
+    friend1
+    friend2
+
 recommending_user
     from Recommendation to User
+    from likedRecommendation to User
 
 to_whom_recommended
     from Recommendation to User
+    from likedRecommendation to User
 
 movie_recommended
     from Recommendation to Movies
+    from likedRecommendation to Movies
+
+
+

@@ -1,6 +1,7 @@
 import React from 'react';
 import './css/home.css'
 import { Component } from 'react';
+import PropTypes from 'prop-types';
 import axios from 'axios';
 import MovieCard from './MovieCard'
 import FriendMovieCard from './FriendMovieCard';
@@ -9,6 +10,45 @@ import Collapsible from 'react-collapsible';
 import { Dialog, FormControl, RadioGroup, FormControlLabel, Radio } from '@material-ui/core';
 import CancelRoundedIcon from '@material-ui/icons/CancelRounded';
 import CheckCircleRoundedIcon from '@material-ui/icons/CheckCircleRounded';
+import AppBar from '@material-ui/core/AppBar';
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
+import Typography from '@material-ui/core/Typography';
+import Box from '@material-ui/core/Box';
+
+function TabPanel(props) {
+    const { children, value, index, ...other } = props;
+
+    return (
+        <div
+        role="tabpanel"
+        hidden={value !== index}
+        id={`simple-tabpanel-${index}`}
+        aria-labelledby={`simple-tab-${index}`}
+        {...other}
+        >
+        {value === index && (
+            <Box p={1}>
+            <Typography>{children}</Typography>
+            </Box>
+        )}
+        </div>
+    );
+}
+
+TabPanel.propTypes = {
+    children: PropTypes.node,
+    index: PropTypes.any.isRequired,
+    value: PropTypes.any.isRequired,
+};
+
+function a11yProps(index) {
+    return {
+        id: `simple-tab-${index}`,
+        'aria-controls': `simple-tabpanel-${index}`,
+    };
+}
+
 
 export default class Home extends Component{
     constructor(){
@@ -33,7 +73,9 @@ export default class Home extends Component{
             watchHistorySearchText: "",
             allFriendsList: [],
             watchHistory: [],
-            moviePanelSearchText: ""
+            moviePanelSearchText: "",
+            tabValue: 0,
+            notificationList: []
         }
         this.toggleProfileDialog = this.toggleProfileDialog.bind(this);
         this.toggleAddFriendsDialog = this.toggleAddFriendsDialog.bind(this);
@@ -51,6 +93,8 @@ export default class Home extends Component{
         this.getWatchHistory = this.getWatchHistory.bind(this);
         this.getAllFriendRequests = this.getAllFriendRequests.bind(this);
         this.getMovieList = this.getMovieList.bind(this);
+        this.getFriendRecommendations = this.getFriendRecommendations.bind(this);
+        this.getAllNotifications = this.getAllNotifications.bind(this);
 
         this.logoutUser = this.logoutUser.bind(this);
         this.removeFriend = this.removeFriend.bind(this);
@@ -58,6 +102,7 @@ export default class Home extends Component{
         this.sendRequestToUser = this.sendRequestToUser.bind(this);
         this.acceptFriendRequest = this.acceptFriendRequest.bind(this);
         this.deleteFriendRequest = this.deleteFriendRequest.bind(this);
+        this.removeNotification = this.removeNotification.bind(this);
     }
     componentDidMount(){
         fetch('/getUserDetails').then(res => res.json()).then(data => {
@@ -71,15 +116,23 @@ export default class Home extends Component{
                 this.setState({username: data.username, isUserLoggedIn: true});
         });
         this.getMovieList();
+        this.getFriendRecommendations();
+        this.getAllFriendRequests();
+        this.getAllNotifications();
+    }
+    getFriendRecommendations(){
         fetch('/getFriendRecommendations').then(res => res.json()).then(data => {
             this.setState({friendRecs: data.friendRecs});
         });
-        this.getAllFriendRequests();
     }
     getAllFriendRequests(){
         fetch('/getFriendRequests').then(res => res.json()).then(data => {
             this.setState({requestQueue: data.requestQueue})
-            // console.log(data.requestQueue);
+        })
+    }
+    getAllNotifications(){
+        fetch('/getAllNotifications').then(res => res.json()).then(data => {
+            this.setState({notificationList: data.notificationList})
         })
     }
     getMovieList(){
@@ -257,6 +310,19 @@ export default class Home extends Component{
             });
         }
     }
+    removeNotification(username, movie_id){
+        axios.post('/removeNotification',{username: username, movie_id: movie_id})
+        .then(res => {
+        let data = res.data;
+        if (data.success){
+            this.getAllNotifications();
+        }
+        else
+            alert(data.error);
+        }, (error) => {
+            console.log(error);
+        });
+    }
     render() {
         if (!this.state.isUserLoggedIn)
             return (<div></div>)
@@ -265,7 +331,7 @@ export default class Home extends Component{
             <div className="collapseDiv">
             <Collapsible trigger={e.name} triggerStyle={{cursor: 'pointer',fontSize: "17px"}} transitionTime={300}>
                 <div style={{width: "95%",paddingTop: "1%",paddingBottom: "1%",paddingLeft: "3%"}}>
-                    {e.movies.map((ei,idx) => {return (<FriendMovieCard movieDic={ei}/>)})}
+                    {e.movies.map((ei,idx) => {return (<FriendMovieCard getFunc={this.getFriendRecommendations} friendUsername={e.name} movieDic={ei}/>)})}
                 </div>
             </Collapsible>
             </div>
@@ -437,21 +503,42 @@ export default class Home extends Component{
                             </div>
                             <div style={{width: "100%", display: "flex", justifyContent: "center", margin: "2% 0%"}}>
                                 <div className="requestQueueOuterDiv">
-                                    <div className="requestQueueHeader">Friend Requests</div>
-                                    <div className="requestQueueDiv">
-                                        {this.state.requestQueue.map((e,id) => {return (
-                                            <div style={{width: "100%", display: "flex", justifyContent: "center"}}>
-                                                <div className="requestElement">
-                                                    <div style={{width:"80%", padding: "0% 2%"}}>
-                                                        <div style={{fontSize: '17px'}}>{e.username}</div>
-                                                        <div style={{fontSize: '12px'}}><b style={{fontWeight: "600"}}>Likes:</b> {e.likedGenres}</div>
+                                    <AppBar position="static" style={{width: "100%"}} color="default">
+                                        <Tabs variant="fullWidth" value={this.state.tabValue} onChange={(e,n) => {this.setState({tabValue: n})}} aria-label="simple tabs example">
+                                        <Tab label="Friend Requests" />
+                                        <Tab label="Notifications" />
+                                        </Tabs>
+                                    </AppBar>
+                                    <TabPanel value={this.state.tabValue} index={0}>
+                                        <div className="requestQueueDiv">
+                                            {this.state.requestQueue.map((e,id) => {return (
+                                                <div style={{width: "100%", display: "flex", justifyContent: "center"}}>
+                                                    <div className="requestElement">
+                                                        <div style={{width:"80%", padding: "0% 2%"}}>
+                                                            <div style={{fontSize: '17px'}}>{e.username}</div>
+                                                            <div style={{fontSize: '12px'}}><b style={{fontWeight: "600"}}>Likes:</b> {e.likedGenres}</div>
+                                                        </div>
+                                                        <div style={{width:"10%",textAlign: "center"}}><CheckCircleRoundedIcon onClick={() =>{this.acceptFriendRequest(e.username)}} style={{color: "#33CC00", cursor: "pointer"}}/></div>
+                                                        <div style={{width:"10%",textAlign: "center"}}><CancelRoundedIcon onClick={() =>{this.deleteFriendRequest(e.username)}} style={{color: "red", cursor: "pointer"}}/></div>
                                                     </div>
-                                                    <div style={{width:"10%",textAlign: "center"}}><CheckCircleRoundedIcon onClick={() =>{this.acceptFriendRequest(e.username)}} style={{color: "#33CC00", cursor: "pointer"}}/></div>
-                                                    <div style={{width:"10%",textAlign: "center"}}><CancelRoundedIcon onClick={() =>{this.deleteFriendRequest(e.username)}} style={{color: "red", cursor: "pointer"}}/></div>
                                                 </div>
-                                            </div>
-                                        )})}
-                                    </div>
+                                            )})}
+                                        </div>
+                                    </TabPanel>
+                                    <TabPanel value={this.state.tabValue} index={1}>
+                                        <div className="requestQueueDiv">
+                                            {this.state.notificationList.map((e,id) => {return (
+                                                <div style={{width: "100%", display: "flex", justifyContent: "center"}}>
+                                                    <div className="requestElement">
+                                                        <div style={{width:"90%", padding: "0% 2%"}}>
+                                                            <div style={{fontSize: '17px'}}>{e.text}</div>
+                                                        </div>
+                                                        <div style={{width:"10%",textAlign: "center"}}><CheckCircleRoundedIcon onClick={() =>{this.removeNotification(e.username,e.movie_id)}} style={{color: "#33CC00", cursor: "pointer"}}/></div>
+                                                    </div>
+                                                </div>
+                                            )})}
+                                        </div>
+                                    </TabPanel>
                                 </div>
                             </div>
                             <div className="editYourProfileDiv">

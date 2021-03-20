@@ -140,7 +140,47 @@ def getMovieList():
             movieEntry['genreList'] = genreList
             statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:acted_in]-(g:Celebrity) return g;"
             actors = tx.run(statement).data()            
-            movieEntry['actors'] = ", ".join([g['g']['name'] for g in actors])
+            movieEntry['actors'] = [g['g']['name'] for g in actors]
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
+            director = tx.run(statement).data()  
+            movieEntry['director'] = director[0]['g']['name']
+            reviews = []
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[r:review]-(g:Critic) return g,r.review_text;"
+            reviewtemp = tx.run(statement).data()
+            for i in reviewtemp:
+                reviewDic = {}
+                reviewDic['reviewedBy'] = i['g']['name']
+                reviewDic['content'] = i['r.review_text']
+                reviews.append(reviewDic)
+            movieEntry['reviews'] = reviews
+            movieEntry['numUsers'] = y['no_user_ratings']
+            ans.append(movieEntry)
+        return {'movieList': ans, 'success': True, 'error': "NA"}
+
+@app.route('/getMovieListCritic',methods=['GET'])
+@login_required
+def getMovieListCritic():
+    if current_user.is_authenticated:
+        tx = graph.begin()
+        statement = f"MATCH (m:Movies) return m LIMIT 25;"
+        movieList = tx.run(statement).data()
+        ans = []
+        for x in movieList:
+            y = x['m']
+            movieEntry = {}
+            movieEntry['id'] = y['movie_id']
+            movieEntry['title'] = y['title']
+            movieEntry['year'] = y['year_released']
+            movieEntry['rating'] = y['avg_rating']
+            movieEntry['duration'] = y['duration']
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})-[:is_genre]->(g:Genres) return g;"
+            genres = tx.run(statement).data()
+            genreList = [g['g']['name'] for g in genres]
+            movieEntry['genre'] = ", ".join(genreList)
+            movieEntry['genreList'] = genreList
+            statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:acted_in]-(g:Celebrity) return g;"
+            actors = tx.run(statement).data()            
+            movieEntry['actors'] = [g['g']['name'] for g in actors]
             statement = f"MATCH (m:Movies {{movie_id: {y['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
             director = tx.run(statement).data()  
             movieEntry['director'] = director[0]['g']['name']
@@ -216,7 +256,7 @@ def getFriendRecommendations():
                 movieEntry['genreList'] = genreList
                 statement = f"MATCH (m:Movies {{movie_id: {movie['movie_id']}}})<-[:acted_in]-(g:Celebrity) return g;"
                 actors = tx.run(statement).data()            
-                movieEntry['actors'] = ", ".join([g['g']['name'] for g in actors])
+                movieEntry['actors'] = [g['g']['name'] for g in actors]
                 statement = f"MATCH (m:Movies {{movie_id: {movie['movie_id']}}})<-[:directed]-(g:Celebrity) return g;"
                 director = tx.run(statement).data()  
                 movieEntry['director'] = director[0]['g']['name']
@@ -463,6 +503,43 @@ def markFavouriteActors():
         try:
             data = json.loads(request.data)
             actorList = data['actorList']
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/getAllNotifications',methods=['GET'])
+@login_required
+def getAllNotifications():
+    if current_user.is_authenticated:
+        nlist = []
+        for i in range(12):
+            d ={}
+            d['username'] = f"friend{i}"
+            d['movie_id'] = i
+            d['text'] = "Notification text"
+            nlist.append(d)
+        return {"notificationList": nlist}
+
+@app.route('/sendLikedRecommendation', methods=['POST'])
+@login_required
+def sendLikedRecommendation():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            username = data["username"].strip()
+            movie_id = data["movie_id"].strip()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/removeRecommendation', methods=['POST'])
+@login_required
+def removeRecommendation():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            username = data["username"].strip()
+            movie_id = data["movie_id"].strip()
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}

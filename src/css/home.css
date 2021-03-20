@@ -208,9 +208,9 @@
 }
 .requestQueueOuterDiv{
     width: 90%;
-    border: 1px solid #AAA;
-    border-radius: 4px;
-    padding: 1%;
+    /* border: 1px solid #AAA;
+    border-radius: 4px; */
+    /* padding: 1%; */
     margin-right: -4%;
 }
 .requestQueueHeader{
@@ -222,7 +222,7 @@
 }
 .requestQueueDiv {
     width: 98%;
-    height: 50vh;
+    height: 51vh;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 1%;
