@@ -51,10 +51,6 @@ rated
     from User to Movies
     rating
 
-recommended
-    from Movies to User
-    level
-
 Admin
     username (primary key)
     name (not null)
