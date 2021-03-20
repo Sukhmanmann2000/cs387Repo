@@ -8,6 +8,9 @@ import Dialog from '@material-ui/core/Dialog';
 export default class MoviePage extends Component{
     constructor(props){
         super(props);
+        var tempDic = {};
+        for (let x of props.location.state.movieDic.actors)
+            tempDic[x] = false;
         this.state = {
             movieDic: props.location.state ? props.location.state.movieDic : null,
             isCritic: "NA",
@@ -16,18 +19,24 @@ export default class MoviePage extends Component{
             friendList: [],
             selectedFriends: {},
             dialogOpen: false,
+            favActorsDialogOpen: false,
             searchText: "",
             genreList: [],
-            selectedGenres: {}
+            selectedGenres: {},
+            favouriteActors: tempDic
         }
         this.logoutUser = this.logoutUser.bind(this);
         this.getFriendList = this.getFriendList.bind(this);
         this.toggleDialog = this.toggleDialog.bind(this);
+        this.toggleFavActorsDialog = this.toggleFavActorsDialog.bind(this);
         this.handleSearchChange = this.handleSearchChange.bind(this);
         this.handleCheckBox = this.handleCheckBox.bind(this);
         this.recommendFriends = this.recommendFriends.bind(this);
         this.getAllGenres = this.getAllGenres.bind(this);
         this.handleGenreSelect = this.handleGenreSelect.bind(this);
+        this.markFavouriteDirector = this.markFavouriteDirector.bind(this);
+        this.markFavouriteActors = this.markFavouriteActors.bind(this);
+        this.handleFavActorsCheckBox = this.handleFavActorsCheckBox.bind(this);
     }
     componentDidMount(){
         fetch('/checkUserLoggedIn').then(res => res.json()).then(data => {
@@ -74,8 +83,44 @@ export default class MoviePage extends Component{
             this.setState({selectedFriends: tempDic});
         });
     }
+    markFavouriteDirector(){
+        axios.post('/markFavouriteDirector',{directorName: this.state.movieDic.director})
+        .then(res => {
+        let data = res.data;
+        if (data.success){
+            alert("Director "+this.state.movieDic.director+" marked as favourite");
+        }
+        else{
+            alert(data.error);
+        }
+        }, (error) => {
+            console.log(error);
+        })
+    }
+    markFavouriteActors(){
+        var favActorsList = [];
+        for (let key in this.state.favouriteActors){
+            if (this.state.favouriteActors[key])
+                favActorsList.push(key);
+        }
+        axios.post('/markFavouriteActors',{actorList: favActorsList})
+        .then(res => {
+        let data = res.data;
+        if (data.success){
+            alert("Marked favourite actors successfully");
+        }
+        else{
+            alert(data.error);
+        }
+        }, (error) => {
+            console.log(error);
+        })
+    }
     toggleDialog(){
         this.setState({dialogOpen: !this.state.dialogOpen});
+    }
+    toggleFavActorsDialog(){
+        this.setState({favActorsDialogOpen: !this.state.favActorsDialogOpen});
     }
     handleSearchChange(e){
         this.setState({searchText: e.target.value});
@@ -84,6 +129,11 @@ export default class MoviePage extends Component{
         let tempDic = this.state.selectedFriends;
         tempDic[ce.target.name] = !tempDic[ce.target.name];
         this.setState({selectedFriends: tempDic});
+    }
+    handleFavActorsCheckBox(ce) {
+        let tempDic = this.state.favouriteActors;
+        tempDic[ce.target.name] = !tempDic[ce.target.name];
+        this.setState({favouriteActors: tempDic});
     }
     handleGenreSelect(e){
         var tempDic = this.state.selectedGenres;
@@ -139,6 +189,25 @@ export default class MoviePage extends Component{
                         </div>
                     </div>
                 </Dialog>
+                <Dialog open={this.state.favActorsDialogOpen} onClose={this.toggleFavActorsDialog}>
+                    <div className="friendsDialogBoundary">
+                        <div className="dialogHeader">Mark Favourite Actors</div>
+                        <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", display: "flex",justifyContent: "center"}}>
+                            <div className="dialogFriendList">
+                                {this.state.movieDic.actors.map((e,lid)=>{
+                                    return (
+                                    <div style={{width: "95%",display: "flex",flexDirection: "row", padding: "3px 0px", justifyContent: "center"}}>
+                                        <input name={e} style={{marginTop: "7px", width: "15px"}} checked={this.state.favouriteActors[e]} type="checkbox" onChange={this.handleFavActorsCheckBox}></input>
+                                        <div style={{marginLeft: "5px",fontSize: "18px"}}>{e}</div>
+                                    </div>
+                                )})}
+                            </div>
+                        </div>
+                        <div style={{width: "100%",margin: "3% 0%",display: "flex",justifyContent: "center"}}>
+                            <div className="moviePageLogoutButton" onClick={this.markFavouriteActors}>Mark Favourite</div>
+                        </div>
+                    </div>
+                </Dialog>
                 <div className="moviePageHeader">
                     <div className="moviePageHomeButton" onClick={() => {window.location.href = "/home"}}>Home</div>
                     <div className="moviePageMainHeader">Recommender System</div>
@@ -171,7 +240,7 @@ export default class MoviePage extends Component{
                         <div style={{width: "80%"}}>
                             <div className="moviePageInfo"><b>Duration: </b>{this.state.movieDic.duration} mins</div>
                             <div className="moviePageInfo"><b>Director: </b>{this.state.movieDic.director}</div>
-                            <div className="moviePageInfo"><b>Actors: </b>{this.state.movieDic.actors}</div>
+                            <div className="moviePageInfo"><b>Actors: </b>{this.state.movieDic.actors.join(", ")}</div>
                         </div>
                         <div style={{width: "20%",display: "flex",alignItems:"center",justifyContent: "left"}}>
                             {!this.state.isCritic ? 
@@ -190,6 +259,10 @@ export default class MoviePage extends Component{
                             }}
                             />
                         </div>
+                    </div>
+                    <div style={{width: "100%", display: "flex", flexDirection: "row", margin: "1% 0%"}}>
+                        <div className="moviePageLogoutButton" onClick={this.markFavouriteDirector}>Mark Favourite Director</div>
+                        <div className="moviePageLogoutButton" style={{marginLeft: "1%"}} onClick={this.toggleFavActorsDialog}>Mark Favourite Actors</div>
                     </div>
                     {this.state.isCritic!="NA" && !this.state.isCritic && this.state.movieDic.reviews && this.state.movieDic.reviews.length>0? 
                     <div>
