@@ -150,4 +150,7 @@ f.write("CREATE ()-[:recommending_user]->();\n")
 f.write("CREATE ()-[:to_whom_recommended]->();\n")
 f.write("CREATE ()-[:movie_recommended]->();\n")
 
+# CREATING INDEX
+f.write("CREATE INDEX celeb_index FOR (c:Celebrity) ON (c.name)\n")
+
 
