@@ -20,7 +20,7 @@ class FriendMovieCard extends Component{
         this.props.history.push({
             pathname: "/moviePage",
             state: {
-                movieDic: this.props.movieDic
+                movie_id: this.props.movieDic.id
             }
         })
     }
@@ -70,6 +70,7 @@ class FriendMovieCard extends Component{
                         <div className="friendmovieInfo"><b style={{fontWeight: "800"}}>Actors: </b>{movieDic.actors.join(", ")}</div>
                     </div>
                     <div style={{width: "20%"}}>
+                        {this.props.displayLiked ? 
                         <div style={{width: "100%"}}>
                             <div style={{width: '100%', textAlign: "center", fontSize: "12px", fontWeight: "800", marginTop: "9%"}}>Liked:</div>
                             <div style={{width: "100%", display: "flex", justifyContent: "center", marginBottom: "-9%"}}>
@@ -81,6 +82,7 @@ class FriendMovieCard extends Component{
                                 </div>
                             </div>
                         </div>
+                        : null }
                     </div>
                 </div>
                 

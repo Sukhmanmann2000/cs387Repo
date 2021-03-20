@@ -332,7 +332,7 @@ export default class Home extends Component{
             <div className="collapseDiv">
             <Collapsible trigger={e.name} triggerStyle={{cursor: 'pointer',fontSize: "17px"}} transitionTime={300}>
                 <div style={{width: "95%",paddingTop: "1%",paddingBottom: "1%",paddingLeft: "3%"}}>
-                    {e.movies.map((ei,idx) => {return (<FriendMovieCard getFunc={this.getFriendRecommendations} friendUsername={e.name} movieDic={ei}/>)})}
+                    {e.movies.map((ei,idx) => {return (<FriendMovieCard displayLiked={true} getFunc={this.getFriendRecommendations} friendUsername={e.name} movieDic={ei}/>)})}
                 </div>
             </Collapsible>
             </div>
@@ -423,7 +423,7 @@ export default class Home extends Component{
                                 {this.state.watchHistory.map((e,lid)=>{
                                 if (e.title.toLowerCase().includes(this.state.watchHistorySearchText.toLowerCase()))
                                     return (
-                                    <FriendMovieCard movieDic={e}/>
+                                    <FriendMovieCard displayLiked={false} getFunc={this.getFriendRecommendations} friendUsername={e.name} movieDic={e}/>
                                 )})}
                             </div>
                         </div>

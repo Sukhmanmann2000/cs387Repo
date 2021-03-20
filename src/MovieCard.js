@@ -16,7 +16,7 @@ class MovieCard extends Component{
         this.props.history.push({
             pathname: "/moviePage",
             state: {
-                movieDic: this.props.movieDic
+                movie_id: this.props.movieDic.id
             }
         })
     }

@@ -8,11 +8,9 @@ import Dialog from '@material-ui/core/Dialog';
 export default class MoviePage extends Component{
     constructor(props){
         super(props);
-        var tempDic = {};
-        for (let x of props.location.state.movieDic.actors)
-            tempDic[x] = false;
         this.state = {
-            movieDic: props.location.state ? props.location.state.movieDic : null,
+            movie_id: props.location.state ? props.location.state.movie_id : null,
+            movieDic: {},
             isCritic: "NA",
             userRating: 0,
             errorMessage: "",
@@ -23,7 +21,9 @@ export default class MoviePage extends Component{
             searchText: "",
             genreList: [],
             selectedGenres: {},
-            favouriteActors: tempDic
+            favouriteActors: {},
+            dataLoaded : false,
+            reviewText: ""
         }
         this.logoutUser = this.logoutUser.bind(this);
         this.getFriendList = this.getFriendList.bind(this);
@@ -38,6 +38,10 @@ export default class MoviePage extends Component{
         this.markFavouriteActors = this.markFavouriteActors.bind(this);
         this.handleFavActorsCheckBox = this.handleFavActorsCheckBox.bind(this);
         this.rateMovie = this.rateMovie.bind(this);
+        this.getMovieDetails = this.getMovieDetails.bind(this);
+        this.getMovieRating = this.getMovieRating.bind(this);
+        this.modifyGenres = this.modifyGenres.bind(this);
+        this.addReview = this.addReview.bind(this);
     }
     componentDidMount(){
         fetch('/checkUserLoggedIn').then(res => res.json()).then(data => {
@@ -51,6 +55,68 @@ export default class MoviePage extends Component{
                     this.getAllGenres();
             }
         });
+        this.getMovieDetails();
+    }
+    modifyGenres(){
+        var tempList = [];
+        for (let key in this.state.selectedGenres){
+            if (this.state.selectedGenres[key])
+                tempList.push(key)
+        }
+        if (tempList.length==0){
+            alert("Please specify atleast 1 Genre");
+            return;
+        }
+        axios.post('/modifyGenres',{genreList: tempList,movie_id: this.state.movie_id})
+        .then(res => {
+        let data = res.data;
+        if (data.success){
+            this.getMovieDetails();
+            alert("Genres modified successfully");
+            var tempDic = this.state.selectedGenres;
+            for (let key in tempDic){
+                tempDic[key] = false;
+            }
+            this.setState({selectedGenres: tempDic});
+        }
+        else{
+            alert(data.error);
+        }
+        }, (error) => {
+            console.log(error);
+        })
+    }
+    getMovieRating(){
+        axios.post('/getMovieRating',{movie_id: this.state.movie_id})
+        .then(res => {
+        let data = res.data;
+        if (data.success){
+            this.setState({userRating: data.rating, reviewText: data.review})
+        }
+        else{
+            alert(data.error);
+        }
+        }, (error) => {
+            console.log(error);
+        })
+    }
+    getMovieDetails(){
+        axios.post('/getMovieDetails',{movie_id: this.state.movie_id})
+        .then(res => {
+        let data = res.data;
+        if (data.success){
+            var tempDic = {};
+            for (let x of data.movieDic.actors)
+                tempDic[x] = false;
+            this.setState({movieDic: data.movieDic,favouriteActors: tempDic,dataLoaded: true}); 
+            this.getMovieRating();
+        }
+        else{
+            alert(data.error);
+        }
+        }, (error) => {
+            console.log(error);
+        })
     }
     logoutUser(){
         axios.post('/logoutUser',{})
@@ -68,7 +134,7 @@ export default class MoviePage extends Component{
             this.setState({genreList: data.genreList});
             var tempDic = {};
             for (let x of data.genreList){
-                tempDic[x.genre_id] = false;
+                tempDic[x.name] = false;
             }
             this.setState({selectedGenres: tempDic});
         });
@@ -138,7 +204,7 @@ export default class MoviePage extends Component{
     }
     handleGenreSelect(e){
         var tempDic = this.state.selectedGenres;
-        tempDic[e.genre_id] = !tempDic[e.genre_id];
+        tempDic[e.name] = !tempDic[e.name];
         this.setState({selectedGenres: tempDic});
     }
     recommendFriends(){
@@ -148,7 +214,7 @@ export default class MoviePage extends Component{
                 friendList.push(key)
             }
         }
-        axios.post('/recommendFriends',{friendList: friendList,movie_id: this.state.movieDic.id})
+        axios.post('/recommendFriends',{friendList: friendList,movie_id: this.state.movie_id})
         .then(res => {
         let data = res.data;
         if (data.success){
@@ -164,11 +230,12 @@ export default class MoviePage extends Component{
     rateMovie(event, newValue){
         var oldValue = this.state.userRating;
         this.setState({userRating: newValue});
-        axios.post('/rateMovie',{rating: newValue})
+        axios.post('/rateMovie',{rating: newValue,movie_id: this.state.movie_id})
         .then(res => {
         let data = res.data;
         if (data.success){
             alert("Rating Saved Successfully");
+            this.getMovieDetails();
         } else {
             alert(data.error)
             this.setState({userRating: oldValue});
@@ -178,9 +245,25 @@ export default class MoviePage extends Component{
             this.setState({userRating: oldValue});
         })
     }
+    addReview(){
+        axios.post('/addReview',{movie_id: this.state.movie_id, reviewText: this.state.reviewText })
+        .then(res => {
+        let data = res.data;
+        if (data.success){
+            alert("Review Saved Successfully");
+            this.getMovieDetails();
+        } else {
+            alert(data.error)
+        }
+        }, (error) => {
+            console.log(error);
+        })
+    }
     render(){
-        if (!this.state.movieDic){
+        if (this.state.movie_id===null){
             window.location.href = "/home";
+        } else if(!this.state.dataLoaded){
+            return(<div></div>)
         }
         return(
             <div className="moviePage">
@@ -276,10 +359,12 @@ export default class MoviePage extends Component{
                             />
                         </div>
                     </div>
+                    {!this.state.isCritic ? 
                     <div style={{width: "100%", display: "flex", flexDirection: "row", margin: "1% 0%"}}>
                         <div className="moviePageLogoutButton" onClick={this.markFavouriteDirector}>Mark Favourite Director</div>
                         <div className="moviePageLogoutButton" style={{marginLeft: "1%"}} onClick={this.toggleFavActorsDialog}>Mark Favourite Actors</div>
                     </div>
+                    : null}
                     {this.state.isCritic!="NA" && !this.state.isCritic && this.state.movieDic.reviews && this.state.movieDic.reviews.length>0? 
                     <div>
                         <div className="moviePageCriticReviewHeader">Critic Reviews</div>
@@ -299,18 +384,21 @@ export default class MoviePage extends Component{
                             {this.state.genreList.map((e,id) => {return (
                                 <div className="addMovieGenreElement" 
                                 onClick={() => {this.handleGenreSelect(e)}} 
-                                style={this.state.selectedGenres[e.genre_id]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
+                                style={this.state.selectedGenres[e.name]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
                                 >
-                                    {e.genre}
+                                    {e.name}
                                 </div>   
                             )})}
                         </div>
+                        <div style={{width: "10%",marginTop: "0.6%"}}>
+                            <div className="moviePageLogoutButton" onClick={this.modifyGenres}>Modify Genres</div>
+                        </div>  
                         <div className="moviePageCriticReviewHeader">Add Review</div>
                         <div style={{width: "95%"}}>
-                            <textarea className="addReviewArea"></textarea>
+                            <textarea className="addReviewArea" value={this.state.reviewText} onChange={(e) => {this.setState({reviewText: e.target.value})}}></textarea>
                         </div>
                         <div style={{width: "10%",marginTop: "0.6%"}}>
-                            <div className="moviePageLogoutButton">Submit Review</div>
+                            <div className="moviePageLogoutButton" onClick={this.addReview}>Submit Review</div>
                         </div>                       
                     </div> : null}
                 </div>
