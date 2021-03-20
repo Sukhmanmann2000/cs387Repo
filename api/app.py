@@ -119,10 +119,18 @@ def getUserDetails():
 def getMovieList():
     if current_user.is_authenticated and request.method=='POST':
         data = json.loads(request.data)
-        searchText = data["searchText"].strip()
+        searchText = data["searchText"].strip().lower()
         searchOption = data["searchOption"].strip()
         tx = graph.begin()
-        statement = f"MATCH (m:Movies) return m LIMIT 25;"
+        offset = 25
+        if(searchOption=="Title"):
+            statement = f"MATCH (m:Movies) where toLower(m.title) contains '{searchText}' return m LIMIT {offset};"
+        elif(searchOption=="Actor"):
+            statement = f"MATCH (m:Movies)<-[:acted_in]-(a:Celebrity) where toLower(a.name) contains '{searchText}' return m LIMIT {offset}; "
+        elif(searchOption=="Director"):
+            statement = f"MATCH (m:Movies)<-[:directed]-(a:Celebrity) where toLower(a.name) contains '{searchText}' return m LIMIT {offset}; "
+        elif(searchOption=="Year"):
+            statement = f"MATCH (m:Movies) where m.year_released = {searchText} return m LIMIT {offset};"
         movieList = tx.run(statement).data()
         ans = []
         for x in movieList:
@@ -240,6 +248,8 @@ def getFriendRecommendations():
             friendEntry["name"] = friend['username']
             statement = f"MATCH (a:Recommendation {{friend1: '{friend['username']}', friend2: '{current_user.username}'}})-[:movie_recommended]->(m:Movies) return m;"
             movies = tx.run(statement).data()
+            if(len(movies)==0): 
+                continue
             friendEntry["movies"] = []
             for j in movies:
                 movie = j['m']
@@ -366,6 +376,8 @@ def removeFriend():
             username = data['username'].strip()
             tx=graph.begin()
             statement = f"MATCH (p:User {{username: '{current_user.username}'}})-[r:friend]-(q:User {{username: '{username}'}}) delete r;"
+            tx.run(statement)
+            statement = f"MATCH (r:Recommendation) where (r.friend1 = '{username}' and r.friend2 = '{current_user.username}') or (r.friend2 = '{username}' and r.friend1 = '{current_user.username}') detach delete r"
             tx.run(statement)
             tx.commit()
             return {'success': True, 'error': "NA"}
@@ -511,12 +523,15 @@ def markFavouriteActors():
 @login_required
 def getAllNotifications():
     if current_user.is_authenticated:
+        tx = graph.begin()
+        statement = f"MATCH (a:LikedRecommendation {{friend2: '{current_user.username}'}})-[:movie_recommended]->(m:Movies) return a,a.friend1,m"
+        data = tx.run(statement).data()
         nlist = []
-        for i in range(12):
+        for i in data:
             d ={}
-            d['username'] = f"friend{i}"
-            d['movie_id'] = i
-            d['text'] = "Notification text"
+            d['username'] = i['a.friend1']
+            d['movie_id'] = i['m']['movie_id']
+            d['text'] = f"{i['m']['title']}: {d['username']} liked your recommendation"
             nlist.append(d)
         return {"notificationList": nlist}
 
@@ -527,7 +542,21 @@ def sendLikedRecommendation():
         try:
             data = json.loads(request.data)
             username = data["username"].strip()
-            movie_id = data["movie_id"].strip()
+            movie_id = data["movie_id"]
+            tx = graph.begin()
+            statement = f"MERGE (a:LikedRecommendation {{friend1: '{current_user.username}', friend2: '{username}'}})"
+            tx.run(statement)
+            statement = f"MATCH (a:User {{username: '{current_user.username}'}}),(b:LikedRecommendation {{friend1: '{current_user.username}', friend2: '{username}'}}),(c:User {{username: '{username}'}}),(d:Movies {{movie_id: {movie_id}}}) MERGE (b)-[r:recommending_user]->(c) MERGE (b)-[q:to_whom_recommended]->(a) MERGE (b)-[p:movie_recommended]->(d) RETURN r;"
+            tx.run(statement)
+            statement = f"MATCH (b:Recommendation {{friend2: '{current_user.username}', friend1: '{username}'}}),(d:Movies {{movie_id: {movie_id}}}),(b)-[p:movie_recommended]->(d) DELETE p;"
+            tx.run(statement)
+            statement = f"MATCH (b:Recommendation {{friend2: '{current_user.username}', friend1: '{username}'}})-[:movie_recommended]->(d:Movies) return count(d);"
+            value = tx.run(statement).data()
+            value = value[0]['count(d)']
+            if(value==0):
+                statement = f"MATCH (b:Recommendation {{friend2: '{current_user.username}', friend1: '{username}'}}) detach delete b"
+                tx.run(statement)
+            tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
@@ -539,11 +568,42 @@ def removeRecommendation():
         try:
             data = json.loads(request.data)
             username = data["username"].strip()
-            movie_id = data["movie_id"].strip()
+            movie_id = data["movie_id"]
+            tx = graph.begin()
+            statement = f"MATCH (b:Recommendation {{friend2: '{current_user.username}', friend1: '{username}'}}),(d:Movies {{movie_id: {movie_id}}}),(b)-[p:movie_recommended]->(d) DELETE p;"
+            tx.run(statement)
+            statement = f"MATCH (b:Recommendation {{friend2: '{current_user.username}', friend1: '{username}'}})-[:movie_recommended]->(d:Movies) return count(d);"
+            value = tx.run(statement).data()
+            value = value[0]['count(d)']
+            if(value==0):
+                statement = f"MATCH (b:Recommendation {{friend2: '{current_user.username}', friend1: '{username}'}}) detach delete b"
+                tx.run(statement)
+            tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
 
+@app.route('/removeNotification', methods=['POST'])
+@login_required
+def removeNotification():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            username = data["username"].strip()
+            movie_id = data["movie_id"]
+            tx = graph.begin()
+            statement = f"MATCH (b:LikedRecommendation {{friend2: '{current_user.username}', friend1: '{username}'}}),(d:Movies {{movie_id: {movie_id}}}),(b)-[p:movie_recommended]->(d) DELETE p;"
+            tx.run(statement)
+            statement = f"MATCH (b:LikedRecommendation {{friend2: '{current_user.username}', friend1: '{username}'}})-[:movie_recommended]->(d:Movies) return count(d);"
+            value = tx.run(statement).data()
+            value = value[0]['count(d)']
+            if(value==0):
+                statement = f"MATCH (b:LikedRecommendation {{friend2: '{current_user.username}', friend1: '{username}'}}) detach delete b"
+                tx.run(statement)
+            tx.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
 # @app.route('/getRecommendations', methods=['GET'])
 # def getRecommendationsS1(user_id,threshold):
 #     # In Strategy 1, the similarity between two users u1 and u2 is the proportion of movies they have in common

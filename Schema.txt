@@ -76,7 +76,7 @@ Recommendation   (friend1 recommended friend2)
     friend1
     friend2 
 
-likedRecommendation (friend1 liked friend2's recommendation)
+LikedRecommendation (friend1 liked friend2's recommendation)
     friend1
     friend2
 
