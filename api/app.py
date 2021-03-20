@@ -604,6 +604,17 @@ def removeNotification():
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/rateMovie',methods=['POST'])
+@login_required
+def rateMovie():
+    if request.method == 'POST':
+        try: 
+            data = json.loads(request.data)
+            rating = data['rating']
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
 # @app.route('/getRecommendations', methods=['GET'])
 # def getRecommendationsS1(user_id,threshold):
 #     # In Strategy 1, the similarity between two users u1 and u2 is the proportion of movies they have in common

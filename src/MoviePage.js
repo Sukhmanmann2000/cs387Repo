@@ -37,6 +37,7 @@ export default class MoviePage extends Component{
         this.markFavouriteDirector = this.markFavouriteDirector.bind(this);
         this.markFavouriteActors = this.markFavouriteActors.bind(this);
         this.handleFavActorsCheckBox = this.handleFavActorsCheckBox.bind(this);
+        this.rateMovie = this.rateMovie.bind(this);
     }
     componentDidMount(){
         fetch('/checkUserLoggedIn').then(res => res.json()).then(data => {
@@ -160,6 +161,23 @@ export default class MoviePage extends Component{
             console.log(error);
         })
     }
+    rateMovie(event, newValue){
+        var oldValue = this.state.userRating;
+        this.setState({userRating: newValue});
+        axios.post('/rateMovie',{rating: newValue})
+        .then(res => {
+        let data = res.data;
+        if (data.success){
+            alert("Rating Saved Successfully");
+        } else {
+            alert(data.error)
+            this.setState({userRating: oldValue});
+        }
+        }, (error) => {
+            console.log(error);
+            this.setState({userRating: oldValue});
+        })
+    }
     render(){
         if (!this.state.movieDic){
             window.location.href = "/home";
@@ -254,9 +272,7 @@ export default class MoviePage extends Component{
                             <Rating
                             name="simple-controlled"
                             value={this.state.userRating}
-                            onChange={(event, newValue) => {
-                                this.setState({userRating: newValue});
-                            }}
+                            onChange={this.rateMovie}
                             />
                         </div>
                     </div>
