@@ -267,7 +267,8 @@ export default class Home extends Component{
             let data = res.data;
             if (data.success){
                 alert("Removed " + username + " from Friends successfully");
-                this.getAllFriends()
+                this.getAllFriends();
+                this.getFriendRecommendations();
             }
             else
                 alert(data.error);

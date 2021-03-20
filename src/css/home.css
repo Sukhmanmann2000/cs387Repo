@@ -222,7 +222,7 @@
 }
 .requestQueueDiv {
     width: 98%;
-    height: 51vh;
+    height: 49vh;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 1%;
