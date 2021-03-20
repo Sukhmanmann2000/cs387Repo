@@ -32,7 +32,8 @@ export default class Home extends Component{
             removeFriendsSearchText: "",
             watchHistorySearchText: "",
             allFriendsList: [],
-            watchHistory: []
+            watchHistory: [],
+            moviePanelSearchText: ""
         }
         this.toggleProfileDialog = this.toggleProfileDialog.bind(this);
         this.toggleAddFriendsDialog = this.toggleAddFriendsDialog.bind(this);
@@ -49,6 +50,7 @@ export default class Home extends Component{
         this.getAllFriends = this.getAllFriends.bind(this);
         this.getWatchHistory = this.getWatchHistory.bind(this);
         this.getAllFriendRequests = this.getAllFriendRequests.bind(this);
+        this.getMovieList = this.getMovieList.bind(this);
 
         this.logoutUser = this.logoutUser.bind(this);
         this.removeFriend = this.removeFriend.bind(this);
@@ -68,9 +70,7 @@ export default class Home extends Component{
             else
                 this.setState({username: data.username, isUserLoggedIn: true});
         });
-        fetch('/getMovieList').then(res => res.json()).then(data => {
-            this.setState({movieList: data.movieList});
-        });
+        this.getMovieList();
         fetch('/getFriendRecommendations').then(res => res.json()).then(data => {
             this.setState({friendRecs: data.friendRecs});
         });
@@ -80,6 +80,19 @@ export default class Home extends Component{
         fetch('/getFriendRequests').then(res => res.json()).then(data => {
             this.setState({requestQueue: data.requestQueue})
             // console.log(data.requestQueue);
+        })
+    }
+    getMovieList(){
+        axios.post('/getMovieList',{searchText: this.state.moviePanelSearchText, searchOption: this.state.searchOption})
+        .then(res => {
+            let data = res.data;
+            if (data.success){
+                this.setState({movieList: data.movieList});
+            } else {
+                alert(data.error);
+            }
+        }, (error) => {
+            console.log(error);
         })
     }
     logoutUser(){
@@ -287,7 +300,7 @@ export default class Home extends Component{
                     <div className="addFriendsDialogBoundary">
                         <div className="addFriendsDialogHeader">Add Friends</div>
                         <div style={{width: "100%", display: "flex",justifyContent: "center"}}>
-                            <input type="text" className="addFriendsDialogSearch" placeholder="Search All Users" onChange={this.handleRemoveFriendsSearchChange}></input>
+                            <input type="text" className="addFriendsDialogSearch" placeholder="Search All Users" onChange={this.handleAddFriendsSearchChange}></input>
                         </div>
                         <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", margin: "2% 0%", display: "flex",justifyContent: "center"}}>
                             <div className="addFriendsUserList">
@@ -365,9 +378,9 @@ export default class Home extends Component{
                     </div>
                     <div className="recommendationPanel">
                         <div className="searchMovieDiv">
-                            <input className="searchMovie" placeholder={searchText} type="text"></input>
+                            <input className="searchMovie" placeholder={searchText} type="text" value={this.state.moviePanelSearchText} onChange={(e) => {this.setState({moviePanelSearchText: e.target.value})}}></input>
                             <div className="searchMovieIcon">
-                                <img style={{width:"100%"}} src={search}></img>
+                                <img style={{width:"100%"}} src={search} onClick={this.getMovieList}></img>
                             </div>
                         </div>
                         <div className="recommendationHeader">
