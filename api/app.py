@@ -445,6 +445,28 @@ def recommendFriends():
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
 
+@app.route('/markFavouriteDirector', methods=['POST'])
+@login_required
+def markFavouriteDirector():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            directorName = data['directorName']
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/markFavouriteActors', methods=['POST'])
+@login_required
+def markFavouriteActors():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            actorList = data['actorList']
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
 # @app.route('/getRecommendations', methods=['GET'])
 # def getRecommendationsS1(user_id,threshold):
 #     # In Strategy 1, the similarity between two users u1 and u2 is the proportion of movies they have in common

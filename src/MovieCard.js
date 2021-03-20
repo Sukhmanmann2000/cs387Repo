@@ -35,7 +35,7 @@ class MovieCard extends Component{
                 </div>
                 <div className="movieInfo"><b style={{fontWeight: "900"}}>Genres: </b>{movieDic.genre}</div>
                 <div className="movieInfo"><b style={{fontWeight: "900"}}>Director: </b>{movieDic.director}</div>
-                <div className="movieInfo"><b style={{fontWeight: "900"}}>Actors: </b>{movieDic.actors}</div>
+                <div className="movieInfo"><b style={{fontWeight: "900"}}>Actors: </b>{movieDic.actors.join(", ")}</div>
                 
             </div>
         )
