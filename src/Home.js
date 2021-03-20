@@ -445,7 +445,7 @@ export default class Home extends Component{
                     </div>
                     <div className="recommendationPanel">
                         <div className="searchMovieDiv">
-                            <input className="searchMovie" placeholder={searchText} type="text" value={this.state.moviePanelSearchText} onChange={(e) => {this.setState({moviePanelSearchText: e.target.value})}}></input>
+                            <input className="searchMovie" placeholder={searchText} type={this.state.searchOption=="Year" ? "number" : "text"} value={this.state.moviePanelSearchText} onChange={(e) => {this.setState({moviePanelSearchText: e.target.value})}}></input>
                             <div className="searchMovieIcon">
                                 <img style={{width:"100%"}} src={search} onClick={this.getMovieList}></img>
                             </div>
