@@ -114,10 +114,13 @@ def getUserDetails():
     else:
         return {'isUserLoggedIn': False, 'username': "", 'isAdmin': False, 'isCritic': False}
 
-@app.route('/getMovieList',methods=['GET'])
+@app.route('/getMovieList',methods=['POST'])
 @login_required
 def getMovieList():
-    if current_user.is_authenticated:
+    if current_user.is_authenticated and request.method=='POST':
+        data = json.loads(request.data)
+        searchText = data["searchText"].strip()
+        searchOption = data["searchOption"].strip()
         tx = graph.begin()
         statement = f"MATCH (m:Movies) return m LIMIT 25;"
         movieList = tx.run(statement).data()
