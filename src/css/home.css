@@ -129,7 +129,7 @@
 }
 .movieListPanel {
     width: 100%;
-    height: 75vh;
+    height: 70vh;
     overflow-y: auto;
 }
 .collapseDiv{
@@ -159,7 +159,7 @@
     cursor: pointer; 
 }
 .profileDialogBoundary{
-    width: 495px;
+    width: 550px;
 }
 .profileDialogHeader{
     width: 100%;

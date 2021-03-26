@@ -19,7 +19,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 critic_weight=5.0
-offset = 100
+offset = 50
 
 
 db = SQLAlchemy(app)
@@ -71,7 +71,7 @@ def loginUser():
             elif not check_password_hash(user.password, password):
                 return {'loggedIn': False, 'loginerror': "Invalid Password",'isAdmin': False, 'isCritic': False}
             else:
-                login_user(user, remember=True)
+                login_user(user, remember=False)
                 return {'loggedIn': True, 'loginerror': "NA",'isAdmin': user.id==1, 'isCritic': user.isCritic}
         except Exception as e:
             return {'loggedIn': False, 'loginerror': "Unknown Error",'isAdmin': False, 'isCritic': False}
@@ -97,7 +97,7 @@ def registerUser():
             tx.run(statement, {'username': username, 'name': name, 'gender': gender, 'dob': dob})
             db.session.commit()
             tx.commit()
-            login_user(newuser, remember=True)
+            login_user(newuser, remember=False)
             return {'loggedIn': True, 'registererror': "NA"}
         except Exception as e:
             return {'loggedIn': False, 'registererror': "Unknown Error"}
@@ -126,17 +126,26 @@ def getMovieList():
         data = json.loads(request.data)
         searchText = data["searchText"].strip().lower()
         searchOption = data["searchOption"].strip()
+        currentPage = data["currentPage"]
+        skipValue = (currentPage-1)*offset
         tx = graph.begin()
         if(searchOption=="Title"):
-            statement = "MATCH (m:Movies),(u:User {username: $username}) where toLower(m.title) contains $searchText and not ((m)<-[:rated]-(u)) CALL { WITH m,u OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u) return (coalesce(count(g),0)+1) as score1 } CALL { WITH m,u OPTIONAL MATCH (m)<--(b:Celebrity)<-[:favorite]-(u) return (coalesce(count(b),0)+1) as score2}  return m,score1*score2*(m.avg_rating) as score ORDER BY score DESC LIMIT $offset;"
+            statement = "MATCH (m:Movies),(u:User {username: $username}) where toLower(m.title) contains $searchText and not ((m)<-[:rated]-(u)) CALL { WITH m,u OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u) return (coalesce(count(g),0)+1) as score1 } CALL { WITH m,u OPTIONAL MATCH (m)<--(b:Celebrity)<-[:favorite]-(u) return (coalesce(count(b),0)+1) as score2}  return m,score1*score2*(m.avg_rating) as score ORDER BY score DESC SKIP $skipValue LIMIT $offset;"
+            statement1 = "MATCH (m:Movies), (u:User {username: $username}) WHERE toLower(m.title) contains $searchText and not ((m)<-[:rated]-(u)) RETURN count(m);"
         elif(searchOption=="Actor"):
-            statement = "MATCH (a:Celebrity)-[:acted_in]->(m:Movies),(u:User {username: $username}) where toLower(a.name) contains $searchText and not ((m)<-[:rated]-(u))  CALL { WITH m,u OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u) return (coalesce(count(g),0)+1) as score1 } CALL { WITH m,u OPTIONAL MATCH (m)<--(b:Celebrity)<-[:favorite]-(u) return (coalesce(count(b),0)+1) as score2}  return m,score1*score2*(m.avg_rating) as score ORDER BY score DESC LIMIT $offset;"
+            statement = "MATCH (a:Celebrity)-[:acted_in]->(m:Movies),(u:User {username: $username}) where toLower(a.name) contains $searchText and not ((m)<-[:rated]-(u))  CALL { WITH m,u OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u) return (coalesce(count(g),0)+1) as score1 } CALL { WITH m,u OPTIONAL MATCH (m)<--(b:Celebrity)<-[:favorite]-(u) return (coalesce(count(b),0)+1) as score2}  return m,score1*score2*(m.avg_rating) as score ORDER BY score DESC SKIP $skipValue LIMIT $offset;"
+            statement1 = "MATCH (a:Celebrity)-[:acted_in]->(m:Movies),(u:User {username: $username}) where toLower(a.name) contains $searchText and not ((m)<-[:rated]-(u)) RETURN count(m);"
         elif(searchOption=="Director"):
-            statement = "MATCH (a:Celebrity)-[:directed]->(m:Movies),(u:User {username: $username}) where toLower(a.name) contains $searchText and not ((m)<-[:rated]-(u))  CALL { WITH m,u OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u) return (coalesce(count(g),0)+1) as score1 } CALL { WITH m,u OPTIONAL MATCH (m)<--(b:Celebrity)<-[:favorite]-(u) return (coalesce(count(b),0)+1) as score2}  return m,score1*score2*(m.avg_rating) as score ORDER BY score DESC LIMIT $offset;"
+            statement = "MATCH (a:Celebrity)-[:directed]->(m:Movies),(u:User {username: $username}) where toLower(a.name) contains $searchText and not ((m)<-[:rated]-(u))  CALL { WITH m,u OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u) return (coalesce(count(g),0)+1) as score1 } CALL { WITH m,u OPTIONAL MATCH (m)<--(b:Celebrity)<-[:favorite]-(u) return (coalesce(count(b),0)+1) as score2}  return m,score1*score2*(m.avg_rating) as score ORDER BY score DESC SKIP $skipValue LIMIT $offset;"
+            statement1 = "MATCH (a:Celebrity)-[:directed]->(m:Movies),(u:User {username: $username}) where toLower(a.name) contains $searchText and not ((m)<-[:rated]-(u)) RETURN count(m);"
         elif(searchOption=="Year"):
-            statement = "MATCH (m:Movies),(u:User {username: $username}) where m.year_released = $searchText and not ((m)<-[:rated]-(u)) CALL { WITH m,u OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u) return (coalesce(count(g),0)+1) as score1 } CALL { WITH m,u OPTIONAL MATCH (m)<--(b:Celebrity)<-[:favorite]-(u) return (coalesce(count(b),0)+1) as score2}  return m,score1*score2*(m.avg_rating) as score ORDER BY score DESC LIMIT $offset;"
+            statement = "MATCH (m:Movies),(u:User {username: $username}) where m.year_released = $searchText and not ((m)<-[:rated]-(u)) CALL { WITH m,u OPTIONAL MATCH (m)-[:is_genre]->(g:Genres)<-[:likedGenre]-(u) return (coalesce(count(g),0)+1) as score1 } CALL { WITH m,u OPTIONAL MATCH (m)<--(b:Celebrity)<-[:favorite]-(u) return (coalesce(count(b),0)+1) as score2}  return m,score1*score2*(m.avg_rating) as score ORDER BY score DESC SKIP $skipValue LIMIT $offset;"
+            statement1 = "MATCH (m:Movies),(u:User {username: $username}) where m.year_released = $searchText and not ((m)<-[:rated]-(u)) RETURN count(m);"
             searchText = int(searchText)
-        movieList = tx.run(statement, {'username': current_user.username, 'searchText': searchText, 'offset': offset}).data()
+        movieList = tx.run(statement, {'username': current_user.username, 'searchText': searchText, 'offset': offset, 'skipValue': skipValue}).data()
+        numMovies = tx.run(statement1, {'username': current_user.username,'searchText': searchText}).data()[0]['count(m)']
+        maxPageNumber = numMovies//offset if numMovies%offset==0 else 1 + numMovies//offset
+
         ans = []
         for x in movieList:
             y = x['m']
@@ -157,7 +166,7 @@ def getMovieList():
             director = tx.run(statement, {'movie_id': y['movie_id']}).data()  
             movieEntry['director'] = director[0]['g']['name'] if (len(director)>0) else ""
             ans.append(movieEntry)
-        return {'movieList': ans, 'success': True, 'error': "NA"}
+        return {'movieList': ans, 'totalPages': maxPageNumber, 'success': True, 'error': "NA"}
 
 @app.route('/getMovieListCritic',methods=['POST'])
 @login_required
@@ -166,16 +175,25 @@ def getMovieListCritic():
         data = json.loads(request.data)
         searchText = data["searchText"].strip().lower()
         searchOption = data["searchOption"].strip()
+        currentPage = data["currentPage"]
+        skipValue = (currentPage-1)*offset
         tx = graph.begin()
         if(searchOption=="Title"):
-            statement = "MATCH (m:Movies) where toLower(m.title) contains $searchText return m LIMIT $offset;"
+            statement = "MATCH (m:Movies) where toLower(m.title) contains $searchText return m SKIP $skipValue LIMIT $offset;"
+            statement1 = "MATCH (m:Movies) WHERE toLower(m.title) contains $searchText RETURN count(m);"
         elif(searchOption=="Actor"):
-            statement = "MATCH (m:Movies)<-[:acted_in]-(a:Celebrity) where toLower(a.name) contains $searchText return m LIMIT $offset; "
+            statement = "MATCH (m:Movies)<-[:acted_in]-(a:Celebrity) where toLower(a.name) contains $searchText return m SKIP $skipValue LIMIT $offset; "
+            statement1 = "MATCH (m:Movies)<-[:acted_in]-(a:Celebrity) where toLower(a.name) contains $searchText RETURN count(m);"
         elif(searchOption=="Director"):
-            statement = "MATCH (m:Movies)<-[:directed]-(a:Celebrity) where toLower(a.name) contains $searchText return m LIMIT $offset; "
+            statement = "MATCH (m:Movies)<-[:directed]-(a:Celebrity) where toLower(a.name) contains $searchText return m SKIP $skipValue LIMIT $offset; "
+            statement1 = "MATCH (m:Movies)<-[:directed]-(a:Celebrity) where toLower(a.name) contains $searchText RETURN count(m);"
         elif(searchOption=="Year"):
-            statement = "MATCH (m:Movies) where m.year_released = $searchText return m LIMIT $offset;"
-        movieList = tx.run(statement, {'searchText': searchText, 'offset': offset}).data()
+            statement = "MATCH (m:Movies) where m.year_released = $searchText return m SKIP $skipValue LIMIT $offset;"
+            statement1 = "MATCH (m:Movies) where m.year_released = $searchText RETURN count(m);"
+            searchText = int(searchText)
+        movieList = tx.run(statement, {'searchText': searchText, 'offset': offset, 'skipValue': skipValue}).data()
+        numMovies = tx.run(statement1, {'searchText': searchText}).data()[0]['count(m)']
+        maxPageNumber = numMovies//offset if numMovies%offset==0 else 1 + numMovies//offset
         ans = []
         for x in movieList:
             y = x['m']
@@ -196,7 +214,7 @@ def getMovieListCritic():
             director = tx.run(statement, {'movie_id': y['movie_id']}).data()  
             movieEntry['director'] = director[0]['g']['name'] if (len(director)>0) else ""
             ans.append(movieEntry)
-        return {'movieList': ans, 'success': True, 'error': "NA"}
+        return {'movieList': ans, 'totalPages': maxPageNumber, 'success': True, 'error': "NA"}
 
 @app.route('/getWatchHistory',methods=['GET'])
 @login_required
