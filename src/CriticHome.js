@@ -6,6 +6,7 @@ import axios from 'axios';
 import MovieCard from './MovieCard'
 import search from './static/search.png'
 import { Dialog, FormControl, RadioGroup, FormControlLabel, Radio } from '@material-ui/core';
+import Pagination from '@material-ui/lab/Pagination';
 
 export default class CriticHome extends Component{
     constructor(){
@@ -26,7 +27,9 @@ export default class CriticHome extends Component{
             movieActorList: [],
             criticHomeSearchText: "",
             searchOption: "Title",
-            addMovieErrorMessage: ""
+            addMovieErrorMessage: "",
+            totalPages: 1,
+            currentPage: 1
         }
         this.logoutUser = this.logoutUser.bind(this);
         this.handleGenreSelect = this.handleGenreSelect.bind(this);
@@ -34,6 +37,7 @@ export default class CriticHome extends Component{
         this.addActor = this.addActor.bind(this);
         this.addMovie = this.addMovie.bind(this);
         this.getMovieListCritic = this.getMovieListCritic.bind(this);
+        this.handlePageChange = this.handlePageChange.bind(this);
     }
     componentDidMount(){
         fetch('/getUserDetails').then(res => res.json()).then(data => {
@@ -57,11 +61,11 @@ export default class CriticHome extends Component{
         this.getMovieListCritic();
     }
     getMovieListCritic(){
-        axios.post('/getMovieListCritic',{searchText: this.state.criticHomeSearchText, searchOption: this.state.searchOption})
+        axios.post('/getMovieListCritic',{searchText: this.state.criticHomeSearchText, searchOption: this.state.searchOption, currentPage: this.state.currentPage})
         .then(res => {
             let data = res.data;
             if (data.success){
-                this.setState({movieList: data.movieList});
+                this.setState({movieList: data.movieList, totalPages: data.totalPages});
             } else {
                 alert(data.error);
             }
@@ -127,7 +131,7 @@ export default class CriticHome extends Component{
                     movieActor: "",
                     movieActorList: [],
                     selectedGenres: {}
-                });
+                },this.getMovieListCritic);
             }
             else{
                 alert(data.error)
@@ -143,6 +147,9 @@ export default class CriticHome extends Component{
     }
     handleSearchOptionChange(e){
         this.setState({searchOption: e.target.value});
+    }
+    handlePageChange(event, value){
+        this.setState({currentPage: value}, this.getMovieListCritic);
     }
     render(){
         if (!this.state.isUserLoggedIn)
@@ -177,6 +184,9 @@ export default class CriticHome extends Component{
                                     <div className="criticHomeMovieListPanel">
                                         {movieElement}
                                     </div>
+                                </div>
+                                <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "2%"}}>
+                                    <Pagination count={this.state.totalPages} page={this.state.currentPage} onChange={this.handlePageChange} color="primary" variant="outlined" shape="rounded" />
                                 </div>
                             </div>
                             <div style={{width: "20%", height: "100%", display: "flex", alignItems: "center"}}>
@@ -272,7 +282,7 @@ export default class CriticHome extends Component{
                                     <div className="addMovieGenreListBoundary">
                                         <div className="addMovieGenreListDiv">
                                             {this.state.genreList.map((e,id) => {return (
-                                                <div className="addMovieGenreElement" 
+                                                <div className="criticHomeAddMovieGenreElement" 
                                                 onClick={() => {this.handleGenreSelect(e)}} 
                                                 style={this.state.selectedGenres[e.name]? {backgroundColor: e.color, color: "white"} : {backgroundColor: "white", color: "black"}}
                                                 >

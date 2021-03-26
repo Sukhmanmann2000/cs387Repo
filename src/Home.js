@@ -15,6 +15,7 @@ import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
+import Pagination from '@material-ui/lab/Pagination';
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -75,7 +76,9 @@ export default class Home extends Component{
             watchHistory: [],
             moviePanelSearchText: "",
             tabValue: 0,
-            notificationList: []
+            notificationList: [],
+            totalPages: 1,
+            currentPage: 1
         }
         this.toggleProfileDialog = this.toggleProfileDialog.bind(this);
         this.toggleAddFriendsDialog = this.toggleAddFriendsDialog.bind(this);
@@ -86,6 +89,7 @@ export default class Home extends Component{
         this.handleAddFriendsSearchChange = this.handleAddFriendsSearchChange.bind(this);
         this.handleRemoveFriendsSearchChange = this.handleRemoveFriendsSearchChange.bind(this);
         this.handleWatchHistorySearchChange = this.handleWatchHistorySearchChange.bind(this);
+        this.handlePageChange = this.handlePageChange.bind(this);
 
         this.handleGenreSelect = this.handleGenreSelect.bind(this);
         this.getAllGenres = this.getAllGenres.bind(this);
@@ -136,11 +140,11 @@ export default class Home extends Component{
         })
     }
     getMovieList(){
-        axios.post('/getMovieList',{searchText: this.state.moviePanelSearchText, searchOption: this.state.searchOption})
+        axios.post('/getMovieList',{searchText: this.state.moviePanelSearchText, searchOption: this.state.searchOption, currentPage: this.state.currentPage})
         .then(res => {
             let data = res.data;
             if (data.success){
-                this.setState({movieList: data.movieList});
+                this.setState({movieList: data.movieList, totalPages: data.totalPages});
             } else {
                 alert(data.error);
             }
@@ -223,6 +227,7 @@ export default class Home extends Component{
                     let data = res.data;
                     if (data.success){
                         alert("Genres saved successfully")
+                        this.getMovieList();
                         this.toggleProfileDialog();
                     } else {
                         this.setState({selectGenreDialogError: data.error});
@@ -245,6 +250,9 @@ export default class Home extends Component{
     }
     handleWatchHistorySearchChange(e){
         this.setState({watchHistorySearchText: e.target.value});
+    }
+    handlePageChange(event, value){
+        this.setState({currentPage: value}, this.getMovieList);
     }
     sendRequestToUser(username){
         axios.post('/sendRequestToUser',{username: username})
@@ -455,6 +463,9 @@ export default class Home extends Component{
                         </div>
                         <div className="movieListPanel">
                             {movieElement}
+                        </div>
+                        <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "2%"}}>
+                            <Pagination count={this.state.totalPages} page={this.state.currentPage} onChange={this.handlePageChange} color="primary" variant="outlined" shape="rounded" />
                         </div>
                     </div>
                     <div className="optionsPanel">
