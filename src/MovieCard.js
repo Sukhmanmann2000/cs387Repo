@@ -33,7 +33,7 @@ class MovieCard extends Component{
                         <div style={{marginLeft: "10px",marginTop: "2px"}}>{movieDic.rating}/5</div>
                     </div>
                 </div>
-                <div className="movieInfo"><b style={{fontWeight: "900"}}>Genres: </b>{movieDic.genre}</div>
+                <div className="movieInfo"><b style={{fontWeight: "900"}}>Genres: </b>{movieDic.genreList.join(", ")}</div>
                 <div className="movieInfo"><b style={{fontWeight: "900"}}>Director: </b>{movieDic.director}</div>
                 <div className="movieInfo"><b style={{fontWeight: "900"}}>Actors: </b>{movieDic.actors.join(", ")}</div>
                 
