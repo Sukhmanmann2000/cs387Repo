@@ -65,7 +65,7 @@ class FriendMovieCard extends Component{
                 </div>
                 <div style={{width: "100%", display: "flex", flexDirection: "row"}}>
                     <div style={{width: "80%"}}>
-                        <div className="friendmovieInfo"><b style={{fontWeight: "800"}}>Genres: </b>{movieDic.genre}</div>
+                        <div className="friendmovieInfo"><b style={{fontWeight: "800"}}>Genres: </b>{movieDic.genreList.join(", ")}</div>
                         <div className="friendmovieInfo"><b style={{fontWeight: "800"}}>Director: </b>{movieDic.director}</div>
                         <div className="friendmovieInfo"><b style={{fontWeight: "800"}}>Actors: </b>{movieDic.actors.join(", ")}</div>
                     </div>

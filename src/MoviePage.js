@@ -321,8 +321,8 @@ export default class MoviePage extends Component{
                             {this.state.movieDic.genreList? 
                             <div className="moviePageGenres">
                                 {this.state.movieDic.genreList.map((e,id) => {return(
-                                    <div className="moviePageGenreElement" style={{backgroundColor: "orange"}}>
-                                        {e}
+                                    <div className="moviePageGenreElement" style={{backgroundColor: e[1]}}>
+                                        {e[0]}
                                     </div>
                                 )})}
                             </div>:null}

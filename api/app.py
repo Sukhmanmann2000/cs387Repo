@@ -20,6 +20,34 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 critic_weight=5.0
 offset = 50
+colorDic = {
+    'Film-Noir': '#33331a',
+    'Sport': '#00b300',
+    'Comedy': '#33adff',
+    'Fantasy': '#ff80ff',
+    'Family': '#9999ff',
+    'Reality-TV': '#661a00',
+    'Documentary': '#3d3d5c',
+    'Action': '#ff0000',
+    'Musical': '#cccc00',
+    'News': '#334d4d',
+    'Game-Show': '#33cccc',
+    'Thriller': '#2f2f1e',
+    'Crime': '#8f00b3',
+    'History': '#ffb84d',
+    'Biography': '#bf80ff',
+    'Sci-Fi': '#3366ff',
+    'War': '#b3003b',
+    'Short': '#00804d',
+    'Horror': '#66004d',
+    'Music': '#c6ff1a',
+    'Romance': '#ff1a75',
+    'Western': '#ffb366',
+    'Drama': '#003333',
+    'Adventure': '#ff4d4d',
+    'Mystery': '#1a6600',
+    'Animation': '#000099'
+}
 
 
 db = SQLAlchemy(app)
@@ -157,7 +185,7 @@ def getMovieList():
             statement = "MATCH (m:Movies {movie_id: $movie_id})-[:is_genre]->(g:Genres) return g;"
             genres = tx.run(statement, {'movie_id': y['movie_id']}).data()
             genreList = [g['g']['name'] for g in genres]
-            movieEntry['genre'] = ", ".join(genreList)
+            # movieEntry['genre'] = ", ".join(genreList)
             movieEntry['genreList'] = genreList
             statement = "MATCH (m:Movies {movie_id: $movie_id})<-[:acted_in]-(g:Celebrity) return g;"
             actors = tx.run(statement, {'movie_id': y['movie_id']}).data()            
@@ -205,7 +233,7 @@ def getMovieListCritic():
             statement = "MATCH (m:Movies {movie_id: $movie_id})-[:is_genre]->(g:Genres) return g;"
             genres = tx.run(statement, {'movie_id': y['movie_id']}).data()
             genreList = [g['g']['name'] for g in genres]
-            movieEntry['genre'] = ", ".join(genreList)
+            # movieEntry['genre'] = ", ".join(genreList)
             movieEntry['genreList'] = genreList
             statement = "MATCH (m:Movies {movie_id: $movie_id})<-[:acted_in]-(g:Celebrity) return g;"
             actors = tx.run(statement, {'movie_id': y['movie_id']}).data()            
@@ -234,7 +262,7 @@ def getWatchHistory():
             statement = "MATCH (m:Movies {movie_id: $movie_id})-[:is_genre]->(g:Genres) return g;"
             genres = tx.run(statement, {'movie_id': y['movie_id']}).data()
             genreList = [g['g']['name'] for g in genres]
-            movieEntry['genre'] = ", ".join(genreList)
+            # movieEntry['genre'] = ", ".join(genreList)
             movieEntry['genreList'] = genreList
             statement = "MATCH (m:Movies {movie_id: $movie_id})<-[:acted_in]-(g:Celebrity) return g;"
             actors = tx.run(statement, {'movie_id': y['movie_id']}).data()            
@@ -273,7 +301,7 @@ def getFriendRecommendations():
                 statement = "MATCH (m:Movies {movie_id: $movie_id})-[:is_genre]->(g:Genres) return g;"
                 genres = tx.run(statement, {'movie_id': movie['movie_id']}).data()
                 genreList = [g['g']['name'] for g in genres]
-                movieEntry['genre'] = ", ".join(genreList)
+                # movieEntry['genre'] = ", ".join(genreList)
                 movieEntry['genreList'] = genreList
                 statement = "MATCH (m:Movies {movie_id: $movie_id})<-[:acted_in]-(g:Celebrity) return g;"
                 actors = tx.run(statement, {'movie_id': movie['movie_id']}).data()            
@@ -316,9 +344,11 @@ def getAllGenres():
         statement = "MATCH (p:Genres) return p"
         x = tf.run(statement).data()
         genreList = [i['p'] for i in x]
-        r = lambda : np.random.randint(0,255)
+        i = 0
         for x in genreList:
-            x['color'] = '#%02X%02X%02X' % (r(),r(),r())
+            x['color'] = colorDic[x['name']]
+            # print(f"'{x['name']}': '{x['color']}',")
+            i+=1
         return {'genreList': genreList}
 
 @app.route('/getLikedGenres',methods=['GET'])
@@ -726,8 +756,8 @@ def getMovieDetails():
             movieEntry['duration'] = y['duration']
             statement = "MATCH (m:Movies {movie_id: $movie_id})-[:is_genre]->(g:Genres) return g;"
             genres = tx.run(statement, {'movie_id': y['movie_id']}).data()
-            genreList = [g['g']['name'] for g in genres]
-            movieEntry['genre'] = ", ".join(genreList)
+            genreList = [[g['g']['name'], colorDic[g['g']['name']]] for g in genres]
+            # movieEntry['genre'] = ", ".join(genreList)
             movieEntry['genreList'] = genreList
             statement = "MATCH (m:Movies {movie_id: $movie_id})<-[:acted_in]-(g:Celebrity) return g;"
             actors = tx.run(statement, {'movie_id': y['movie_id']}).data()            
