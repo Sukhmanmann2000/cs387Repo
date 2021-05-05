@@ -273,6 +273,29 @@ def getWatchHistory():
             ans.append(movieEntry)
         return {'watchHistory': ans}
 
+def getTempFriendRecs():
+    friendRecs = []
+    for i in range(1,11):
+        name = f"Friend{i}"
+        friendEntry = {}
+        friendEntry["name"] = name
+        movies = []
+        for j in range(1,4):
+            movieEntry = {}
+            movieEntry['id'] = j
+            movieEntry['title'] = f"Movie{j}"
+            movieEntry['year'] = 2000 + j
+            movieEntry['rating'] = 4.43
+            movieEntry['duration'] = 120
+            movieEntry['genreList'] = ["Action", "Horror"]
+            movieEntry['actors'] = ["Actor1", "Actor2"]
+            movieEntry['director'] = "Director"
+            movieEntry['reviews'] = []
+            movieEntry['numUsers'] = 100
+            movies.append(movieEntry)
+        friendEntry["movies"] = movies
+        friendRecs.append(friendEntry)
+    return friendRecs
 @app.route('/getFriendRecommendations',methods=['GET'])
 @login_required
 def getFriendRecommendations():
@@ -321,6 +344,7 @@ def getFriendRecommendations():
                 movieEntry['numUsers'] = movie['no_user_ratings']
                 friendEntry["movies"].append(movieEntry)
             friendRecs.append(friendEntry)
+        # friendRecs = getTempFriendRecs()
         return {"friendRecs":friendRecs}
 
 @app.route('/getFriendList',methods=['GET'])
@@ -332,9 +356,22 @@ def getFriendList():
             statement = "MATCH (p:User {username: $username})-[:friend]-(q:User) return q"
             friendList = tx.run(statement, {'username': current_user.username}).data()
             friendList = [x['q'] for x in friendList]
+            # friendList = [{"username":f"Friend{i}"} for i in range(1,5)]
             return {"friendList": friendList, "error":"NA"}
         except Exception as e:
             return {"friendList":[], "error": "Unknown Error"}
+
+@app.route('/getFavouriteCelebrities',methods=['GET'])
+@login_required
+def getFavouriteCelebrities():
+    if current_user.is_authenticated:
+        tx = graph.begin()
+        statement = "MATCH (p:User {username: $username})-[:favorite]->(c:Celebrity) return c"
+        celebList = tx.run(statement,{'username': current_user.username}).data()
+        celebList = [x['c'] for x in celebList]
+        # print(celebList)
+        return {"favCelebsList": celebList}
+
 
 @app.route('/getAllGenres',methods=['GET'])
 @login_required
@@ -368,6 +405,8 @@ def saveGenres():
         try:
             data = json.loads(request.data)
             tx = graph.begin()
+            statement = "MATCH (a:User {username: $username})-[r:likedGenre]->(b:Genres) DELETE r;"
+            tx.run(statement, {'username': current_user.username})
             for x in data['likedGenres']:
                 statement = "MATCH (a:User {username: $username}),(b:Genres {name: $genrename}) MERGE (a)-[r:likedGenre]->(b) RETURN r;"
                 tx.run(statement, {'username': current_user.username, 'genrename': x})
@@ -420,6 +459,22 @@ def removeFriend():
             tx.run(statement, {'username': current_user.username, 'friendUsername': username})
             statement = "MATCH (r:Recommendation) where (r.friend1 = $friendUsername and r.friend2 = $username) or (r.friend2 = $friendUsername and r.friend1 = $username) detach delete r"
             tx.run(statement, {'username': current_user.username, 'friendUsername': username})
+            tx.commit()
+            return {'success': True, 'error': "NA"}
+        except Exception as e:
+            return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/removeFavoriteCelebrity', methods=['POST'])
+@login_required
+def removeFavoriteCelebrity():
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.data)
+            name = data['name'].strip()
+            print(name)
+            tx = graph.begin()
+            statement = "MATCH (p:User {username: $username})-[r:favorite]->(c:Celebrity {name: $celebName}) delete r;"
+            tx.run(statement,{'username': current_user.username, 'celebName': name})
             tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
@@ -512,7 +567,7 @@ def addFriend():
             tx = graph.begin()
             statement = "MATCH (p:User {username: $friendUsername}),(q:User {username: $username}) CREATE (p)-[r:friend]->(q) return r;"
             tx.run(statement,{'friendUsername': username, 'username': current_user.username})
-            statement = "MATCH (p:User {username: $friendUsername'})-[r:request]-(q:User {username: $username}) DELETE r;"
+            statement = "MATCH (p:User {username: $friendUsername})-[r:request]-(q:User {username: $username}) DELETE r;"
             tx.run(statement,{'friendUsername': username, 'username': current_user.username})
             tx.commit()
             return {'success': True, 'error': "NA"}
