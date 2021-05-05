@@ -61,7 +61,8 @@
 .friendsPanel {
     width: 30%;
     height: 100%;
-    overflow-y: auto;
+    padding-right: 5px;
+    overflow-y: hidden;
     overflow-x: hidden;
 }
 .recommendationPanel {

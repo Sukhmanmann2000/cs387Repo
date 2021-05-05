@@ -62,6 +62,7 @@ export default class Home extends Component{
             profileDialogOpen: false,
             addFriendsDialogOpen: false,
             removeFriendsDialogOpen: false,
+            favCelebsDialogOpen: false,
             watchHistoryDialogopen: false,
             genreList: [],
             likedGenres: {},
@@ -71,8 +72,10 @@ export default class Home extends Component{
             userList: [],
             addFriendsSearchText: "",
             removeFriendsSearchText: "",
+            favCelebsSearchText: "",
             watchHistorySearchText: "",
             allFriendsList: [],
+            favCelebsList: [],
             watchHistory: [],
             moviePanelSearchText: "",
             tabValue: 0,
@@ -84,16 +87,19 @@ export default class Home extends Component{
         this.toggleAddFriendsDialog = this.toggleAddFriendsDialog.bind(this);
         this.toggleWatchHistoryDialog = this.toggleWatchHistoryDialog.bind(this);
         this.toggleRemoveFriendsDialog = this.toggleRemoveFriendsDialog.bind(this);
+        this.toggleFavCelebsDialog = this.toggleFavCelebsDialog.bind(this);
 
         this.handleSearchOptionChange = this.handleSearchOptionChange.bind(this);
         this.handleAddFriendsSearchChange = this.handleAddFriendsSearchChange.bind(this);
         this.handleRemoveFriendsSearchChange = this.handleRemoveFriendsSearchChange.bind(this);
+        this.handleFavCelebsSearchChange = this.handleFavCelebsSearchChange.bind(this);
         this.handleWatchHistorySearchChange = this.handleWatchHistorySearchChange.bind(this);
         this.handlePageChange = this.handlePageChange.bind(this);
 
         this.handleGenreSelect = this.handleGenreSelect.bind(this);
         this.getAllGenres = this.getAllGenres.bind(this);
         this.getAllFriends = this.getAllFriends.bind(this);
+        this.getFavCelebs = this.getFavCelebs.bind(this);
         this.getWatchHistory = this.getWatchHistory.bind(this);
         this.getAllFriendRequests = this.getAllFriendRequests.bind(this);
         this.getMovieList = this.getMovieList.bind(this);
@@ -102,6 +108,7 @@ export default class Home extends Component{
 
         this.logoutUser = this.logoutUser.bind(this);
         this.removeFriend = this.removeFriend.bind(this);
+        this.removeFavCeleb = this.removeFavCeleb.bind(this);
         this.saveGenres = this.saveGenres.bind(this);
         this.sendRequestToUser = this.sendRequestToUser.bind(this);
         this.acceptFriendRequest = this.acceptFriendRequest.bind(this);
@@ -172,6 +179,9 @@ export default class Home extends Component{
     toggleRemoveFriendsDialog(){
         this.setState({removeFriendsDialogOpen: !this.state.removeFriendsDialogOpen});
     }
+    toggleFavCelebsDialog(){
+        this.setState({favCelebsDialogOpen: !this.state.favCelebsDialogOpen});
+    }
     toggleWatchHistoryDialog(){
         this.setState({watchHistoryDialogopen: !this.state.watchHistoryDialogopen});
     }
@@ -200,6 +210,11 @@ export default class Home extends Component{
     getAllFriends(){
         fetch('/getFriendList').then(res => res.json()).then(data => {
             this.setState({allFriendsList: data.friendList});
+        });
+    }
+    getFavCelebs(){
+        fetch('/getFavouriteCelebrities').then(res => res.json()).then(data => {
+            this.setState({favCelebsList: data.favCelebsList});
         });
     }
     getWatchHistory(){
@@ -248,6 +263,9 @@ export default class Home extends Component{
     handleRemoveFriendsSearchChange(e){
         this.setState({removeFriendsSearchText: e.target.value});
     }
+    handleFavCelebsSearchChange(e){
+        this.setState({favCelebsSearchText: e.target.value});
+    }
     handleWatchHistorySearchChange(e){
         this.setState({watchHistorySearchText: e.target.value});
     }
@@ -284,7 +302,25 @@ export default class Home extends Component{
                 console.log(error);
             });
         }
-    } 
+    }
+    removeFavCeleb(name){
+        var confirmation = window.confirm("Remove "+name+" from Favourite Celebrities?");
+        if (confirmation){
+            axios.post('/removeFavoriteCelebrity',{name: name})
+            .then(res => {
+            let data = res.data;
+            if (data.success){
+                alert("Removed " + name + " from Favourite Celebrities successfully");
+                this.getFavCelebs();
+                this.getMovieList();
+            }
+            else
+                alert(data.error);
+            }, (error) => {
+                console.log(error);
+            });
+        }
+    }
     acceptFriendRequest(username){
         var confirmation = window.confirm("Accept request from "+username+"?");
         if (confirmation){
@@ -420,6 +456,30 @@ export default class Home extends Component{
                         </div>
                     </div>
                 </Dialog>
+                <Dialog open={this.state.favCelebsDialogOpen} onClose={this.toggleFavCelebsDialog}>
+                    <div className="addFriendsDialogBoundary">
+                        <div className="addFriendsDialogHeader">Favourite Celebrities</div>
+                        <div style={{width: "100%", display: "flex",justifyContent: "center"}}>
+                            <input type="text" className="addFriendsDialogSearch" placeholder="Search Celebrities" onChange={this.handleFavCelebsSearchChange}></input>
+                        </div>
+                        <div style={{width: "100%", paddingTop: "1%",paddingBottom: "1%", margin: "2% 0%", display: "flex",justifyContent: "center"}}>
+                            <div className="addFriendsUserList">
+                                {this.state.favCelebsList.map((e,lid)=>{
+                                if (e.name.toLowerCase().includes(this.state.favCelebsSearchText.toLowerCase()))
+                                    return (
+                                    <div style={{width: "95%",display: "flex",flexDirection: "row", padding: "3px 5px", border: "1px solid #AAA", borderRadius: "4px", margin: "4px 0px"}}>
+                                        <div style={{width: "95%"}}>
+                                            <div style={{fontSize: "18px"}}>{e.name}</div>            
+                                        </div>
+                                        <div style={{width: "5%", display: "flex", alignItems: "center"}}>
+                                            <CancelRoundedIcon style={{color: "red", cursor: "pointer"}} onClick={() => {this.removeFavCeleb(e.name)}}/>
+                                        </div>
+                                    </div>
+                                )})}
+                            </div>
+                        </div>
+                    </div>
+                </Dialog>
                 <Dialog open={this.state.watchHistoryDialogopen} onClose={this.toggleWatchHistoryDialog}>
                     <div className="addFriendsDialogBoundary">
                         <div className="addFriendsDialogHeader">Watched Movies</div>
@@ -449,7 +509,12 @@ export default class Home extends Component{
                 <div className="bottomContainer">
                     <div className="friendsPanel">
                         <div className="friendsHeader">Friend Recommendations</div>
-                        {friendElement}
+                        <div style={{width: "100%", height: "83.5%", overflowY: "auto"}}>
+                            {friendElement}
+                        </div>
+                        <div style={{width: "100%", padding: "2%", display: "flex", justifyContent: "center"}}>
+                            <div className="editYourProfile" onClick={()=>{this.getFavCelebs();this.toggleFavCelebsDialog();}}>View Favourite Celebrities</div>
+                        </div>
                     </div>
                     <div className="recommendationPanel">
                         <div className="searchMovieDiv">
