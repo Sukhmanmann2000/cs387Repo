@@ -153,4 +153,7 @@ f.write("CREATE ()-[:movie_recommended]->();\n")
 # CREATING INDEX
 f.write("CREATE INDEX celeb_index FOR (c:Celebrity) ON (c.name)\n")
 
+# Removing unnecessary movies
+f.write('MATCH (m:Movies) WHERE m.title contains "Dekalog" detach delete m;\n') 
+
 

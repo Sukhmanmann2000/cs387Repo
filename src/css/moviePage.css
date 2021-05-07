@@ -148,7 +148,7 @@
     font-family: 'Roboto', sans-serif;
 }
 .moviePageSelectGenreDiv{
-    width: 75%;
+    width: 78%;
     display: flex;
     flex-direction: row;
     justify-content: space-between;

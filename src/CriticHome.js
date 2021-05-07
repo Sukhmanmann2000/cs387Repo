@@ -32,6 +32,7 @@ export default class CriticHome extends Component{
             currentPage: 1
         }
         this.logoutUser = this.logoutUser.bind(this);
+        this.getUserDetails = this.getUserDetails.bind(this);
         this.handleGenreSelect = this.handleGenreSelect.bind(this);
         this.handleSearchOptionChange = this.handleSearchOptionChange.bind(this);
         this.addActor = this.addActor.bind(this);
@@ -39,7 +40,7 @@ export default class CriticHome extends Component{
         this.getMovieListCritic = this.getMovieListCritic.bind(this);
         this.handlePageChange = this.handlePageChange.bind(this);
     }
-    componentDidMount(){
+    getUserDetails(){
         fetch('/getUserDetails').then(res => res.json()).then(data => {
             if (!data.isUserLoggedIn)
                 window.location.href = "/login";
@@ -50,6 +51,9 @@ export default class CriticHome extends Component{
             else
                 this.setState({username: data.username, isUserLoggedIn: true});
         });
+    }
+    componentDidMount(){
+        this.getUserDetails();
         fetch('/getAllGenres').then(res => res.json()).then(data => {
             this.setState({genreList: data.genreList});
             var tempDic = {};
