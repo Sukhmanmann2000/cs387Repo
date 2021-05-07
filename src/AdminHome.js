@@ -194,6 +194,10 @@ export default class AdminHome extends Component{
                 alert("Please Enter Correct Input");
                 return;
             }
+        if (this.state.movieYear < 1878){
+            alert("Year Released should be greater than realease year of earliest movie (1878)")
+            return;
+        }
         var tempList = [];
         for (let key in this.state.selectedGenres){
             if (this.state.selectedGenres[key])
@@ -240,6 +244,10 @@ export default class AdminHome extends Component{
     }
     addActor(){
         var actorList = this.state.movieActorList;
+        if (this.state.movieActor.trim()==""){
+            alert("Actor name should not be NULL!")
+            return;
+        }
         actorList.push(this.state.movieActor);
         this.setState({movieActorList: actorList, movieActor: ""});
     }

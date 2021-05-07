@@ -29,6 +29,13 @@ for rows in range(len(movies)):
     title = movies['movie_title'][rows]
     url = movies['movie_imdb_link'][rows]
     duration = "NULL" if pd.isna(movies['duration'][rows]) else movies['duration'][rows]
+    if not pd.isna(movies['title_year'][rows]):
+        try:
+            year = int(movies['title_year'][rows])
+            if year < 1878:
+                continue
+        except:
+            continue
     year_released = "NULL" if pd.isna(movies['title_year'][rows]) else movies['title_year'][rows]
     avg_rating = movies['imdb_score'][rows]
     no_user_ratings = 0 if pd.isna(movies['num_user_for_reviews'][rows]) else movies['num_user_for_reviews'][rows]
@@ -151,7 +158,7 @@ f.write("CREATE ()-[:to_whom_recommended]->();\n")
 f.write("CREATE ()-[:movie_recommended]->();\n")
 
 # CREATING INDEX
-f.write("CREATE INDEX celeb_index FOR (c:Celebrity) ON (c.name)\n")
+f.write("CREATE INDEX celeb_index FOR (c:Celebrity) ON (c.name);\n")
 
 # Removing unnecessary movies
 f.write('MATCH (m:Movies) WHERE m.title contains "Dekalog" detach delete m;\n') 
