@@ -37,6 +37,16 @@ def printAllUsers():
         print(f"id: {user.id}, Username: {user.username}, isCritic: {user.isCritic}")
     
 db.drop_all()
+
+tx = graph.begin()
+statement = "MATCH (u: User) DETACH DELETE u;"
+tx.run(statement)
+statement = "MATCH (c: Critic) DETACH DELETE c;"
+tx.run(statement)
+statement = "MATCH (a: Admin) DETACH DELETE a;"
+tx.run(statement)
+tx.commit()
+
 db.create_all()
 dob = '2000-01-01'
 dtsObj = dts.strptime(dob,'%Y-%m-%d')

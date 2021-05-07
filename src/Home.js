@@ -97,6 +97,7 @@ export default class Home extends Component{
         this.handlePageChange = this.handlePageChange.bind(this);
 
         this.handleGenreSelect = this.handleGenreSelect.bind(this);
+        this.getUserDetails = this.getUserDetails.bind(this);
         this.getAllGenres = this.getAllGenres.bind(this);
         this.getAllFriends = this.getAllFriends.bind(this);
         this.getFavCelebs = this.getFavCelebs.bind(this);
@@ -115,7 +116,7 @@ export default class Home extends Component{
         this.deleteFriendRequest = this.deleteFriendRequest.bind(this);
         this.removeNotification = this.removeNotification.bind(this);
     }
-    componentDidMount(){
+    getUserDetails(){
         fetch('/getUserDetails').then(res => res.json()).then(data => {
             if (!data.isUserLoggedIn)
                 window.location.href = "/login";
@@ -126,6 +127,9 @@ export default class Home extends Component{
             else
                 this.setState({username: data.username, isUserLoggedIn: true});
         });
+    }
+    componentDidMount(){
+        this.getUserDetails();
         this.getMovieList();
         this.getFriendRecommendations();
         this.getAllFriendRequests();
@@ -249,6 +253,7 @@ export default class Home extends Component{
                     }
                     }, (error) => {
                         console.log(error);
+                        this.getUserDetails();
                     })
         }
         else
@@ -283,6 +288,7 @@ export default class Home extends Component{
             alert(data.error);
         }, (error) => {
             console.log(error);
+            this.getUserDetails();
         })
     }
     removeFriend(username){
@@ -300,6 +306,7 @@ export default class Home extends Component{
                 alert(data.error);
             }, (error) => {
                 console.log(error);
+                this.getUserDetails();
             });
         }
     }
@@ -318,6 +325,7 @@ export default class Home extends Component{
                 alert(data.error);
             }, (error) => {
                 console.log(error);
+                this.getUserDetails();
             });
         }
     }
@@ -335,6 +343,7 @@ export default class Home extends Component{
                 alert(data.error);
             }, (error) => {
                 console.log(error);
+                this.getUserDetails();
             });
         }
     }
@@ -352,6 +361,7 @@ export default class Home extends Component{
                 alert(data.error);
             }, (error) => {
                 console.log(error);
+                this.getUserDetails();
             });
         }
     }
@@ -366,6 +376,7 @@ export default class Home extends Component{
             alert(data.error);
         }, (error) => {
             console.log(error);
+            this.getUserDetails();
         });
     }
     render() {

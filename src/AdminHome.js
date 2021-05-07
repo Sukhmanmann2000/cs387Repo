@@ -5,6 +5,13 @@ import axios from 'axios';
 import { Dialog } from '@material-ui/core';
 import Select from 'react-select';
 import CancelRoundedIcon from '@material-ui/icons/CancelRounded';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableContainer from '@material-ui/core/TableContainer';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import Paper from '@material-ui/core/Paper';
 
 const customSelectStyle = {
     control: styles => ({ ...styles, backgroundColor: 'white', fontSize: "17px",fontWeight: "400",width: "97%", marginTop: "-3px", marginLeft: "5px" }),
@@ -45,9 +52,11 @@ export default class AdminHome extends Component{
             movieActor: "",
             movieActorList: [],
             genreList: [],
-            selectedGenres: {}
+            selectedGenres: {},
+            analyticsDic: {}
         }
         this.logoutUser = this.logoutUser.bind(this);
+        this.getUserDetails = this.getUserDetails.bind(this);
         this.toggleAddCriticDialog = this.toggleAddCriticDialog.bind(this);
         this.addCritic = this.addCritic.bind(this);
         this.getAllCritics = this.getAllCritics.bind(this);
@@ -59,8 +68,9 @@ export default class AdminHome extends Component{
         this.addMovie = this.addMovie.bind(this);
         this.getAllGenres = this.getAllGenres.bind(this);
         this.handleGenreSelect = this.handleGenreSelect.bind(this);
+        this.getAnalytics = this.getAnalytics.bind(this);
     }
-    componentDidMount(){
+    getUserDetails(){
         fetch('/getUserDetails').then(res => res.json()).then(data => {
             if (!data.isUserLoggedIn)
                 window.location.href = "/login";
@@ -72,6 +82,10 @@ export default class AdminHome extends Component{
             else
                 this.setState({username: data.username, isUserLoggedIn: true});
         });
+    }
+    componentDidMount(){
+        this.getUserDetails();
+        this.getAnalytics();
     }
     logoutUser(){
         axios.post('/logoutUser',{})
@@ -104,14 +118,25 @@ export default class AdminHome extends Component{
             let data = res.data;
             if (data.success){
                 alert("Critic Added Successfully!");
-                this.setState({criticUsername: "", criticPassword: "", criticName: "", criticGender: "", criticDob: "", addCriticErrorMessage: ""})
+                this.setState({criticUsername: "", criticPassword: "", criticName: "", criticGender: "", criticDob: "", addCriticErrorMessage: ""});
+                this.getAnalytics();
             }
             else{
                 this.setState({addCriticErrorMessage: data.error});
             }
         }, (error) => {
             console.log(error);
+            this.getUserDetails();
         })
+    }
+    getAnalytics(){
+        fetch('/getAdminAnalytics').then(res => res.json()).then(data => {
+            if (!data.error){
+                this.setState({analyticsDic: data.analyticsDic})
+            }
+            else
+                console.log(data.error);
+        });
     }
     getAllCritics(){
         fetch('/getAllCritics').then(res => res.json()).then(data => {
@@ -149,6 +174,7 @@ export default class AdminHome extends Component{
             let data = res.data;
             if (data.success){
                 this.getAllCritics();
+                this.getAnalytics();
                 alert("Critic Removed Successfully!");
             }
             else{
@@ -156,6 +182,7 @@ export default class AdminHome extends Component{
             }
         }, (error) => {
             console.log(error);
+            this.getUserDetails();
         })
     }
     addMovie(){
@@ -189,6 +216,7 @@ export default class AdminHome extends Component{
         .then(res => {
             let data = res.data;
             if (data.success){
+                this.getAnalytics();
                 alert("Movie Added Successfully!");
                 this.setState({
                     movieTitle: "",
@@ -207,6 +235,7 @@ export default class AdminHome extends Component{
             }
         }, (error) => {
             console.log(error);
+            this.getUserDetails();
         })
     }
     addActor(){
@@ -405,6 +434,50 @@ export default class AdminHome extends Component{
                         <div className="adminHomeContent">
                             <div className="adminHomeButton" onClick={() => {this.getAllGenres();this.toggleAddMovieDialog()}}>Add Movie</div>
                         </div>
+                    </div>
+                </div>
+                <div style={{width: "100%", textAlign: "center", fontSize: "30px", fontWeight: "600", marginTop: "3%", marginBottom: "1%"}}>Admin Analytics</div>
+                <div style={{width: "100%", display: "flex", justifyContent: "center", marginTop: "1%"}}>
+                    <div style={{width: "30%"}}>
+                        <TableContainer component={Paper}>
+                            <Table aria-label="simple table">
+                                <TableBody>
+                                {[
+                                    <TableRow key="Total Movies">
+                                        <TableCell component="th" scope="row">
+                                            <b>Total Movies</b>
+                                        </TableCell>
+                                        <TableCell align="right">{this.state.analyticsDic.numMovies}</TableCell>
+                                    </TableRow>,
+                                    <TableRow key="Total Users">
+                                        <TableCell component="th" scope="row">
+                                            <b>Total Users</b>
+                                        </TableCell>
+                                        <TableCell align="right">{this.state.analyticsDic.numUsers}</TableCell>
+                                    </TableRow>,
+                                    <TableRow key="Total Critics">
+                                        <TableCell component="th" scope="row">
+                                            <b>Total Critics</b>
+                                        </TableCell>
+                                        <TableCell align="right">{this.state.analyticsDic.numCritics}</TableCell>
+                                    </TableRow>,
+                                    <TableRow key="Total Movie Ratings">
+                                        <TableCell component="th" scope="row">
+                                            <b>Total Movie Ratings</b>
+                                        </TableCell>
+                                        <TableCell align="right">{this.state.analyticsDic.numRatings}</TableCell>
+                                    </TableRow>,
+                                    <TableRow key="Total Movie Reviews">
+                                        <TableCell component="th" scope="row">
+                                            <b>Total Movie Reviews</b>
+                                        </TableCell>
+                                        <TableCell align="right">{this.state.analyticsDic.numReviews}</TableCell>
+                                    </TableRow>
+
+                                ]}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
                     </div>
                 </div>
             </div>

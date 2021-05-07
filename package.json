@@ -14,7 +14,7 @@
     "web-vitals": "^1.1.0"
   },
   "scripts": {
-    "start": "set PORT=8000 && react-scripts start",
+    "start": "set HOST=0.0.0.0&& set PORT=8000 && react-scripts start",
     "start-api": "cd api && flask run --no-debugger",
     "build": "react-scripts build",
     "test": "react-scripts test",

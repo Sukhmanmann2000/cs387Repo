@@ -471,7 +471,6 @@ def removeFavoriteCelebrity():
         try:
             data = json.loads(request.data)
             name = data['name'].strip()
-            print(name)
             tx = graph.begin()
             statement = "MATCH (p:User {username: $username})-[r:favorite]->(c:Celebrity {name: $celebName}) delete r;"
             tx.run(statement,{'username': current_user.username, 'celebName': name})
@@ -691,13 +690,13 @@ def removeRecommendation():
             movie_id = data["movie_id"]
             tx = graph.begin()
             statement = "MATCH (b:Recommendation {friend2: $username, friend1: $friendUsername}),(d:Movies {movie_id: $movie_id}),(b)-[p:movie_recommended]->(d) DELETE p;"
-            tx.run(statement, {'username': current_user.username, 'friendUserName': username, 'movie_id': movie_id})
+            tx.run(statement, {'username': current_user.username, 'friendUsername': username, 'movie_id': movie_id})
             statement = "MATCH (b:Recommendation {friend2: $username, friend1: $friendUsername})-[:movie_recommended]->(d:Movies) return count(d);"
-            value = tx.run(statement, {'username': current_user.username, 'friendUserName': username}).data()
+            value = tx.run(statement, {'username': current_user.username, 'friendUsername': username}).data()
             value = value[0]['count(d)']
             if(value==0):
                 statement = "MATCH (b:Recommendation {friend2: $username, friend1: $friendUsername}) detach delete b"
-                tx.run(statement, {'username': current_user.username, 'friendUserName': username})
+                tx.run(statement, {'username': current_user.username, 'friendUsername': username})
             tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
@@ -713,13 +712,13 @@ def removeNotification():
             movie_id = data["movie_id"]
             tx = graph.begin()
             statement = "MATCH (b:LikedRecommendation {friend2: $username, friend1: $friendUsername}),(d:Movies {movie_id: $movie_id}),(b)-[p:movie_recommended]->(d) DELETE p;"
-            tx.run(statement, {'username': current_user.username, 'friendUserName': username, 'movie_id': movie_id})
+            tx.run(statement, {'username': current_user.username, 'friendUsername': username, 'movie_id': movie_id})
             statement = "MATCH (b:LikedRecommendation {friend2: $username, friend1: $friendUsername})-[:movie_recommended]->(d:Movies) return count(d);"
-            value = tx.run(statement, {'username': current_user.username, 'friendUserName': username}).data()
+            value = tx.run(statement, {'username': current_user.username, 'friendUsername': username}).data()
             value = value[0]['count(d)']
             if(value==0):
                 statement = "MATCH (b:LikedRecommendation {friend2: $username, friend1: $friendUsername}) detach delete b"
-                tx.run(statement, {'username': current_user.username, 'friendUserName': username})
+                tx.run(statement, {'username': current_user.username, 'friendUsername': username})
             tx.commit()
             return {'success': True, 'error': "NA"}
         except Exception as e:
@@ -827,7 +826,8 @@ def getMovieDetails():
                 reviewDic = {}
                 reviewDic['reviewedBy'] = i['g']['name']
                 reviewDic['content'] = i['r.review_text']
-                reviews.append(reviewDic)
+                if reviewDic['content'] is not None:
+                    reviews.append(reviewDic)
             movieEntry['reviews'] = reviews
             movieEntry['numUsers'] = y['no_user_ratings']
             return {'movieDic': movieEntry,'success': True,'error': "NA"}
@@ -919,7 +919,7 @@ def addReview():
             data = json.loads(request.data)
             movie_id = data['movie_id']
             review_text = data['reviewText']
-            tx =graph.begin()
+            tx = graph.begin()
             statement = "MATCH (m:Movies {movie_id: $movie_id})<-[r:review]-(g:Critic {username: $username}) return count(r)"
             result = tx.run(statement, {'movie_id': movie_id, 'username': current_user.username}).data()
             result = result[0]['count(r)']
@@ -932,6 +932,22 @@ def addReview():
             return {'success': True, 'error': "NA"}
         except Exception as e:
             return {'success': False, 'error': "Unknown Error"}
+
+@app.route('/getAdminAnalytics',methods=['GET'])
+@login_required
+def getAdminAnalytics():
+    if current_user.is_authenticated:
+        try:
+            analyticsDic = {}
+            analyticsDic['numUsers'] = User.query.filter_by(isCritic=False).count() - 1
+            analyticsDic['numCritics'] = User.query.filter_by(isCritic=True).count() 
+            tx = graph.begin()
+            analyticsDic['numMovies'] = tx.run("MATCH (m:Movies) return count(m) AS c;").data()[0]["c"]
+            analyticsDic['numRatings'] = tx.run("MATCH (u:User)-[r:rated]->(m:Movies) return count(r) AS c;").data()[0]["c"]
+            analyticsDic['numReviews'] = tx.run("MATCH (c:Critic)-[r:review]->(m:Movies) return count(r) AS c;").data()[0]["c"]
+            return {'error': False, 'analyticsDic': analyticsDic}
+        except Exception as e:
+            return {'error': True, 'analyticsDic': {}}
 
 # @app.route('/getRecommendations', methods=['GET'])
 # def getRecommendationsS1(user_id,threshold):
